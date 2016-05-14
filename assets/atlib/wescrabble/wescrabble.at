@@ -18,7 +18,7 @@ def makeWeScrabble(UI){
     object: {
         def peers := jlobby.java.util.HashMap.new();
         def table := (1**16).map: {|row|
-            (1**16).map: {|column| "."}
+            (1**16).map: {|column| " "}
         };
 
         def localInterface := object: {

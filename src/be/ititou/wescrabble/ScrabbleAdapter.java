@@ -1,6 +1,7 @@
 package be.ititou.wescrabble;
 
 import be.ititou.wescrabble.interfaces.ATWeScrabble;
+import be.ititou.wescrabble.ui.ScrabbleCell;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
@@ -31,23 +32,8 @@ public class ScrabbleAdapter extends BaseAdapter {
 
 	@Override
 	public View getView(int position, View convertView, ViewGroup parent) {
-		TextView text;
-		if (convertView == null){
-			text = new TextView(parent.getContext());
-		} else {
-			text = (TextView) convertView;
-		}
-		final int row = position/15;
-		final int col = position%15;
-		text.setText(ws.getLetterAt(row, col));
-		text.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				ws.setLetterAt(row, col);
-				notifyDataSetChanged();
-			}
-		});
-		
-		return text;
+		int row = position/15;
+		int col = position%15;
+		return new ScrabbleCell(parent.getContext(), ws, row, col);
 	}
 }

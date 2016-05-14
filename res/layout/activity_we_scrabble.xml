@@ -18,12 +18,14 @@
         android:id="@+id/table"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
         android:layout_alignParentLeft="true"
         android:layout_alignParentRight="true"
         android:layout_below="@+id/title"
         android:layout_marginTop="68dp"
-        android:numColumns="15" >
+        android:background="@android:color/background_dark"
+        android:horizontalSpacing="1dp"
+        android:numColumns="15"
+        android:verticalSpacing="1dp" >
 
     </GridView>
 
