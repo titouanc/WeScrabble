@@ -39,7 +39,13 @@ public class ScrabbleAdapter extends BaseAdapter implements WeScrabbleObserver {
 	public View getView(int position, View convertView, ViewGroup parent) {
 		int row = position/15;
 		int col = position%15;
-		return new ScrabbleCell(parent.getContext(), ws, row, col);
+		if (convertView == null){
+			return new ScrabbleCell(parent.getContext(), ws, row, col);
+		} else {
+			ScrabbleCell cell = (ScrabbleCell) convertView;
+			cell.update();
+			return cell;
+		}
 	}
 
 	@Override

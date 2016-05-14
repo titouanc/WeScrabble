@@ -5,6 +5,7 @@ import be.ititou.wescrabble.R;
 import android.app.Dialog;
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.EditText;
@@ -58,6 +59,7 @@ public class ScrabbleCell extends TextView {
 		ws = backend;
 		update();
 		setGravity(Gravity.CENTER_HORIZONTAL);
+		setTypeface(null, Typeface.BOLD);
 		setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View target) {
