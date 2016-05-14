@@ -1,18 +1,23 @@
 package be.ititou.wescrabble;
 
 import be.ititou.wescrabble.interfaces.ATWeScrabble;
+import be.ititou.wescrabble.interfaces.WeScrabbleObserver;
 import be.ititou.wescrabble.ui.ScrabbleCell;
+import android.app.Activity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
 
-public class ScrabbleAdapter extends BaseAdapter {
+public class ScrabbleAdapter extends BaseAdapter implements WeScrabbleObserver {
 	private ATWeScrabble ws;
+	private Activity owner;
 	
-	public ScrabbleAdapter(ATWeScrabble backend){
+	public ScrabbleAdapter(ATWeScrabble backend, Activity owner){
 		super();
 		ws = backend;
+		ws.addObserver(this);
+		this.owner = owner;
 	}
 	
 	@Override
@@ -35,5 +40,15 @@ public class ScrabbleAdapter extends BaseAdapter {
 		int row = position/15;
 		int col = position%15;
 		return new ScrabbleCell(parent.getContext(), ws, row, col);
+	}
+
+	@Override
+	public void update() {
+		owner.runOnUiThread(new Runnable(){
+			@Override
+			public void run() {
+				notifyDataSetChanged();	
+			}
+		});
 	}
 }

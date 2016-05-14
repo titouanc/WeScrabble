@@ -1,6 +1,7 @@
 def Suggestion := isolate: {
     import /.at.support.symbiosis;
-    def EMPTY := "_";
+    import /.wescrabble.dictionary;
+    def EMPTY := " ";
 
     def name;
     def word;
@@ -86,7 +87,7 @@ def Suggestion := isolate: {
                             else: {i+word.length <= #(table.length)}),
             
             // Valid word
-            (~.dictionary.findWord: word)
+            (findWord: word)
         ] 
         // Can only fill empty cells or the letters must match
         + (each: {|w, i, j| 

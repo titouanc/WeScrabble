@@ -8,7 +8,8 @@ public interface ATWeScrabble {
 	 * @return A 1-length string
 	 */
 	public String getLetterAt(int row, int column);
+		
+	public Boolean addWord(String word, int row, int column, Boolean horizontally);
 	
-	@Deprecated
-	public void setLetterAt(int row, int column);
+	public void addObserver(WeScrabbleObserver observer);
 }

@@ -127,12 +127,12 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 	@Override
 	public void setBackend(ATWeScrabble backend){
 		aws = backend;
-		
+		final Activity owner = this;
 		this.runOnUiThread(new Runnable(){
 			@Override
 			public void run(){
 				table = (GridView) findViewById(R.id.table);
-		        table.setAdapter(new ScrabbleAdapter(aws));
+		        table.setAdapter(new ScrabbleAdapter(aws, owner));
 			}
 		});
 	}
