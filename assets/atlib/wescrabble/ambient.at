@@ -1,0 +1,68 @@
+def Peer := isolate: { 
+    import /.at.lang.futures;
+
+    def ref;
+    def online;
+    def backlog;
+
+    def init(ref, online := true){
+        self.ref = ref;
+        self.online = online;
+        self.backlog := [];
+        self.futures := [];
+
+        when: ref disconnected: {online = false};
+        when: ref reconnected: {
+            online = true;
+            send_backlog();
+        };
+    };
+
+    def send_backlog(){
+        (1**(backlog.length+1)).each: {|i|
+            def msg := futurize(backlog[i], futures[i]);
+            ref <+ msg;
+        };
+        backlog := [];
+        futures := [];
+    };
+
+    def send(msg){
+        if: online
+        then: {ref <+ msg;}
+        else: {
+            def [fut, _] := makeFuture();
+            backlog := backlog + [msg];
+            futures += [fut];
+            fut;
+        }
+    };
+};
+
+def AmbientRefMirror := mirror: {
+    def peers;
+    def offline;
+
+    def init(base, T){
+        super^init(base);
+        peers := [];
+
+        whenever: T discovered: {|remote|
+            peers := peers + [Peer.new(remote)];
+        };
+    };
+
+    def receive(msg){
+        peers.each: {|p| p.send(msg)};
+    };
+};
+
+deftype AmbientRef;
+
+def ambient: T {
+    object: {} taggedAs: [AmbientRef] mirroredBy: {|base|
+        AmbientRefMirror.new(base, T);
+    };
+};
+
+self;

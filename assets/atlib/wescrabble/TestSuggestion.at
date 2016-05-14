@@ -1,0 +1,101 @@
+import ~.suggestion;
+
+def sessionTest(){
+    extend: /.at.unit.test.UnitTest.new("TestSuggestion") with: {
+        def table;
+
+        // I like to assert this way !
+        def assert: obj equals: expected {self.assertEquals(obj, expected)};
+
+        /* Helpers */
+        def sugg(res, @args){
+            self.assert: Suggestion.new("test", @args).validOn(table)
+                 equals: res;
+        };
+        def sugg_valid(@args){sugg(true, @args)};
+        def sugg_invalid(@args){sugg(false, @args)};
+
+        /* Tests */
+        def setUp(){
+            table := (1***15).map: {|i| (1***15).map: {|j| Suggestion.EMPTY}};
+            Suggestion.new("test", "a", 5, 5, true).applyOn(table);
+        };
+
+        def testOk() {
+            sugg_valid("fuzzy", 1, 1, true);
+        };
+
+        def testNoTableUnderflow() {
+            sugg_invalid("fuzzy", 0, 1, true);
+            sugg_invalid("fuzzy", 1, 0, false);
+        };
+
+        def testNoTableOverflow() {
+            sugg_invalid("fuzzy", 1000, 1, true);
+            sugg_invalid("fuzzy", 1, 1000, false);
+        };
+
+        def testNoWordOverflow() {
+            sugg_invalid("fuzzy", 12, 1, false);
+            sugg_invalid("fuzzy", 1, 12, true);
+        };
+
+        def testNotMatchingLetter(){
+            sugg_valid("car", 4, 5, false);
+            sugg_valid("car", 5, 4, true);
+            sugg_invalid("fuzzy", 4, 5, false);
+            sugg_invalid("fuzzy", 5, 4, true);
+        };
+
+        def testInvalidWord(){
+            sugg_invalid("qsd", 1, 1, true);
+        };
+
+        def testRequiredLetters(){
+            def s := Suggestion.new("test", "hello", 1, 1, true);
+            self.assert: s.requiredLetters(table).join("")
+                 equals: "hello";
+        };
+
+        def testRequiredLettersExisting(){
+            def s := Suggestion.new("test", "car", 4, 5, false);
+            self.assert: s.requiredLetters(table).join("")
+                 equals: "cr";
+        };
+
+        def testIsSelf(){
+            def s := Suggestion.new("test", "hello", 1, 1, true);
+            self.assert: (s.is: s) equals: true;
+        };
+
+        def testIsOther(){
+            def s := Suggestion.new("test", "hello", 1, 1, true);
+            def t := Suggestion.new("test", "hello", 1, 1, true);
+            self.assert: (s.is: t) equals: true;
+        };
+
+        def testIsNotOther(){
+            def s := Suggestion.new("test", "hello", 1, 1, true);
+            self.assert: (s.is: Suggestion.new("changed", "hello", 1, 1, true))
+                 equals: false;
+            self.assert: (s.is: Suggestion.new("test", "changed", 1, 1, true))
+                 equals: false;
+            self.assert: (s.is: Suggestion.new("test", "hello", 42, 1, true))
+                 equals: false;
+            self.assert: (s.is: Suggestion.new("test", "hello", 1, 42, true))
+                 equals: false;
+            self.assert: (s.is: Suggestion.new("test", "hello", 1, 1, false))
+                 equals: false;
+        };
+
+        def testComparable(){
+            def s := Suggestion.new("Titou", "banana", 1, 1, true).comparable;
+            def t := Suggestion.new("Titou", "boat", 1, 1, false, 2).comparable;
+            self.assert: s.compareTo(t) equals: -1;
+            self.assert: s.compareTo(s) equals: 0;
+            self.assert: t.compareTo(s) equals: 1;
+        };
+    };
+};
+
+sessionTest().runTest();

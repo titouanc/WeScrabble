@@ -1,0 +1,14 @@
+system.println("This is AmbientTalk !");
+
+object: {
+    def greet(somenone := "world"){
+        system.println("Hello " + someone);
+    };
+    
+    def view := Android.parent;
+    
+    def run(){
+        view.setText("Hello from AmbientTalk");
+        greet("Java");
+    };
+};

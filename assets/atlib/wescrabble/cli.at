@@ -1,0 +1,21 @@
+network.online;
+
+def player(name){
+    actor: {
+        def cli := object: {
+            def getMyName(){name;};
+            def setMessage(title){
+                system.println("=== Set message: " + title + " ===");
+            };
+            def setAppTitle(title){
+                system.println("### Set title: " + title + " ###");
+            };
+            def setBackend(_){};
+        };
+
+        ~.wescrabble.makeWeScrabble(cli);
+    };
+};
+
+player("Titou");
+player("Clara");

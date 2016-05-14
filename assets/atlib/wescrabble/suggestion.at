@@ -1,0 +1,124 @@
+def Suggestion := isolate: {
+    import /.at.support.symbiosis;
+    def EMPTY := "_";
+
+    def name;
+    def word;
+    def i;
+    def j;
+    def horizontal;
+    def seq;
+
+    def init(player, text, row, col, isHorizontal, seqNo := 0){
+        name := player;
+        word := text;
+        i := row;
+        j := col;
+        horizontal := isHorizontal;
+        seq := seqNo;
+    };
+
+    /* Compliance with the comparable interface */
+    def compareTo(other){
+        self.seq <=> other.seq;
+    };
+
+
+    /* Attributes compared by the `is:` method */
+    def is_cmp_attrs := [.name, .word, .i, .j, .horizontal, .seq];
+
+    /* Test for equality between 2 suggestions (all their attributes are ==) */
+    def is: other {
+        is_cmp_attrs.inject: true into: {|r, attr|
+            r.and: {(self <+ attr) == (other <+ attr)}
+        };
+    };
+
+    /* Help the symbiosis engine to know that a Suggestion
+       implements the Comparable interface */
+    def comparable(){
+        cast: self into: jlobby.java.lang.Comparable;
+    };
+
+    /* Iterates over all letters of the suggestion, along with their position
+     * each: {|l, i, j|
+     *    l: the letter (a 1-length string)
+     *    i: row where the letter will be placed (1 <= i <= 15)
+     *    j: column where the letter wil be placed (1 <= j <= 15)
+     * }
+     */
+    def each: block {
+        def w := word.explode();
+        (0**word.length).map: {|x|
+            if: horizontal then: {block(w[x+1], i, j+x)}
+                           else: {block(w[x+1], i+x, j)};
+        };
+    };
+
+    /* `each:` for the Java world (indexes 0 <= idx < 15) */
+    def jEach(cl){
+        each: {|w, r, c| cl.apply(w, r-1, c-1)};
+    };
+
+    /* Lazily evaluate a set of quoted expressions.
+     * Return false as soon as one of them is false,
+     * return true otherwise
+     */
+    def sat(conditions){
+        if: conditions.length == 0
+        then: {true}
+        else: {
+            def [cond, @rest] := conditions;
+            if: (eval: cond in: self)
+            then: {sat(rest)}
+            else: {false}
+        }
+    };
+
+    /* True if this suggestion is valid on given table */
+    def validOn(table){
+        def conditions := `[
+            // Table size
+            (i > 0), (j > 0), (i <= #(table.length)), (j <= #(table.length)),
+            
+            // Word doesnt go out of table
+            (if: horizontal then: {j+word.length <= #(table.length)}
+                            else: {i+word.length <= #(table.length)}),
+            
+            // Valid word
+            (~.dictionary.findWord: word)
+        ] 
+        // Can only fill empty cells or the letters must match
+        + (each: {|w, i, j| 
+            `((#table[#i][#j] == #EMPTY).or: {#table[#i][#j] == #w})
+        });
+
+        sat(conditions);
+    };
+
+    /* Apply the suggestion to the table: copy all letters to their position */
+    def applyOn(table){
+        each: {|w, i, j|
+            table[i].atPut(j, w);
+        };
+    };
+
+    /* String representation */
+    def repr(){
+        def direction := if: horizontal then: {"horizontally"} else: {"vertically"};
+        name + " adds '" + word + "' " + direction + " on row=" + i + ", col=" + j;
+    };
+
+    /* Table of all letters, in order, that are needed to realise the
+     * suggestion. This does not include the letters from crossing words. */
+    def requiredLetters(table){
+        def res := [];
+        each: {|w, i, j|
+            if: table[i][j] == EMPTY
+            then: {res := res + [w];}
+        };
+        res;
+    }
+};
+
+self;

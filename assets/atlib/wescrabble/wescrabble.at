@@ -1,0 +1,69 @@
+import /.at.lang.futures;
+import ~.ambient;
+deftype AnAwesomeWeScrabble;
+deftype TeamA;
+deftype TeamB;
+
+def randInt(){
+    jlobby.java.util.Random.new().nextInt();
+};
+
+def makeWeScrabble(UI){
+    def myName := UI.getMyName();
+    def randomID := randInt();
+    def discovered := false;
+    def team := nil;
+    UI.setAppTitle("We Scrabble /o/");
+
+    object: {
+        def peers := jlobby.java.util.HashMap.new();
+
+        def localInterface := object: {
+
+        };
+
+        UI.setBackend(localInterface);
+
+        def remoteInterface := object: {
+            def getName(){
+                discovered := true;
+                myName;
+            };
+
+            def getRandomID(){
+                randomID;
+            };
+        };
+
+        def discoverPeer(other){
+            when: other<-getName()@TwoWay becomes: {|name|
+                peers.put(name, other);
+                UI.setMessage("Discovered " + name + " !");
+                if: (team == nil)
+                then: {
+                    when: other<-getRandomID()@TwoWay becomes: {|otherID|
+                        while: {(otherID == randomID).and: {discovered.not}}
+                        do: {randomID = randInt;};
+
+                        if: (randomID < otherID)
+                        then: {team := ambient: TeamA;}
+                        else: {team := ambient: TeamB;}; 
+                        UI.setMessage("Joining team " + team);
+                    };
+                };
+            };
+        };
+
+        UI.setMessage("Hello " + myName + " ! Waiting for other players...");
+
+        export: remoteInterface as: AnAwesomeWeScrabble;
+        whenever: AnAwesomeWeScrabble discovered: &discoverPeer;
+    };
+};
+
+def start(){
+    network.online;
+    makeWeScrabble(Android.parent);
+};
+
+self;
