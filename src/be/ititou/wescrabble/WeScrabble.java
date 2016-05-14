@@ -13,6 +13,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.WindowManager;
+import android.widget.GridView;
 import android.widget.TextView;
 
 
@@ -23,6 +24,7 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 	private String myName;
 	private IAT iat;
 	private ATWeScrabble aws;
+	private GridView table;
 	
 	public class StartIATTask extends AsyncTask<Void, String, Void> {
 		private ProgressDialog pd;
@@ -59,6 +61,18 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 	}
 
 	@Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (iat == null) {
+			Intent i = new Intent(this, WeScrabbleAssetInstaller.class);
+			startActivityForResult(i, _ASSET_INSTALLER_);
+		}
+        
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        setContentView(R.layout.activity_we_scrabble);
+    }
+	
+	@Override
 	protected void onStart(){
 		super.onStart();
 		Intent intent = getIntent();
@@ -66,34 +80,7 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 		this.setContentView(R.layout.activity_we_scrabble);
 	}
 	
-	@Override
-	protected void onStop(){
-		super.onStop();
-	}
-	
-	@Override
-	protected void onPause(){
-		super.onPause();
-	}
-	
-	@Override
-	protected void onResume(){
-		super.onResume();
-	}
-		
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        setContentView(R.layout.activity_we_scrabble);
-        if (iat == null) {
-			Intent i = new Intent(this, WeScrabbleAssetInstaller.class);
-			startActivityForResult(i, _ASSET_INSTALLER_);
-		}
-    }
-    
-    @Override
-    protected void onActivityResult(int rq, int res, Intent data) {
+	protected void onActivityResult(int rq, int res, Intent data) {
     	switch (rq){
     	case _ASSET_INSTALLER_:
     		if (res == Activity.RESULT_OK){
@@ -140,6 +127,14 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 	@Override
 	public void setBackend(ATWeScrabble backend){
 		aws = backend;
+		
+		this.runOnUiThread(new Runnable(){
+			@Override
+			public void run(){
+				table = (GridView) findViewById(R.id.table);
+		        table.setAdapter(new ScrabbleAdapter(aws));
+			}
+		});
 	}
 
 	@Override
