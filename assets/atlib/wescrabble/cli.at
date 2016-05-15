@@ -3,6 +3,8 @@ network.online;
 def player(name){
     actor: {
         def cli := object: {
+            def localIf;
+
             def getMyName(){name;};
             def setMessage(title){
                 system.println("=== Set message: " + title + " ===");
@@ -10,7 +12,24 @@ def player(name){
             def setAppTitle(title){
                 system.println("### Set title: " + title + " ###");
             };
-            def setBackend(_){};
+            def update(){
+                def letter;
+                (0**15).each: {|row|
+                    (0**15).each: {|col|
+                        letter := localIf.getLetterAt(row, col);
+                        system.print(" " + letter);
+                    };
+                    system.println("");
+                };
+            };
+            def setBackend(backend){
+                localIf := backend;
+                localIf.addObserver(self);
+                update();
+            };
+            def setTeam(t){
+                setMessage("Joined team " + t);
+            };
         };
 
         ~.wescrabble.makeWeScrabble(cli);
@@ -18,4 +37,4 @@ def player(name){
 };
 
 player("Bot");
-player("Clara");
+//player("Clara");

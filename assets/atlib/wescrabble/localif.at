@@ -7,13 +7,25 @@ def makeLocalInterface(weScrabble, UI){
         };
 
         def addWord(word, row, col, horizontally){
-            def sugg := Suggestion.new(weScrabble.myName, word, row+1, col+1, horizontally);
-            def valid := sugg.validOn(weScrabble.table);
-            valid.ifTrue: {
-                weScrabble.applySuggestion(sugg);
-                weScrabble.everybody<-addWord(sugg);
-            };
-            valid;
+            if: (weScrabble.everybody == nil)
+            then: {
+                UI.setMessage("You are not in a game");
+                false;
+            }
+            else: {
+                def sugg := Suggestion.new(
+                    weScrabble.myName, word,
+                    row+1, col+1, horizontally
+                );
+                def valid := sugg.validOn(weScrabble.table, {|err|
+                    UI.setMessage(err)
+                });
+                valid.ifTrue: {
+                    weScrabble.applySuggestion(sugg);
+                    weScrabble.everybody<-addWord(sugg);
+                };
+                valid;
+            }
         };
 
         def addObserver(obs){

@@ -76,25 +76,42 @@ def Suggestion := isolate: {
         }
     };
 
+    def satMessage(conditions, onError){
+        if: conditions.length == 0
+        then: {true}
+        else: {
+            def [head, @tail] := conditions;
+            def [message, conds] := head;
+
+            if: sat(conds)
+            then: {satMessage(tail, onError);}
+            else: {
+                onError(message);
+                false;
+            }
+        }
+    };
+
     /* True if this suggestion is valid on given table */
-    def validOn(table){
-        def conditions := `[
-            // Table size
-            (i > 0), (j > 0), (i <= #(table.length)), (j <= #(table.length)),
-            
-            // Word doesnt go out of table
-            (if: horizontal then: {j+word.length <= #(table.length)}
-                            else: {i+word.length <= #(table.length)}),
-            
-            // Valid word
-            (findWord: word)
-        ] 
-        // Can only fill empty cells or the letters must match
-        + (each: {|w, i, j| 
-            `((#table[#i][#j] == #EMPTY).or: {#table[#i][#j] == #w})
+    def validOn(table, onError := {|@_|}){
+        def conditions := [
+            ["The word fall outside of the table", `[
+                (i > 0), (j > 0),
+                (i <= #(table.length)), (j <= #(table.length)),
+                (if: horizontal then: {j+word.length <= #(table.length)}
+                                else: {i+word.length <= #(table.length)})
+            ]],
+            ["The word is not valid", `[
+                (findWord: word)
+            ]]
+        ]
+        + (each: {|w, i, j|
+            ["Conflicting letter at row="+i+",col="+j, `[
+                ((#table[#i][#j] == #EMPTY).or: {#table[#i][#j] == #w})
+            ]]
         });
 
-        sat(conditions);
+        satMessage(conditions, onError);
     };
 
     /* Apply the suggestion to the table: copy all letters to their position */

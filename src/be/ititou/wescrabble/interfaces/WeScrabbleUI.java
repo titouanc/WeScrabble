@@ -5,6 +5,9 @@ package be.ititou.wescrabble.interfaces;
  * @author Titouan Christophe
  */
 public interface WeScrabbleUI {
+	public static final int TeamA = 0;
+	public static final int TeamB = 1;
+	
 	/**
 	 * Return the name of this player
 	 */
@@ -27,4 +30,10 @@ public interface WeScrabbleUI {
 	 * @param backend The AmbientTalk WeScrabble local interface
 	 */
 	public void setBackend(ATWeScrabble backend);
+	
+	/**
+	 * Display the newly joined team
+	 * @param team The joined team
+	 */
+	public void setTeam(int team);
 }

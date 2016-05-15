@@ -6,7 +6,9 @@ import edu.vub.at.IAT;
 import edu.vub.at.android.util.IATAndroid;
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
@@ -15,6 +17,7 @@ import android.view.MenuItem;
 import android.view.WindowManager;
 import android.widget.GridView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 
 public class WeScrabble extends Activity implements WeScrabbleUI {
@@ -116,11 +119,12 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 
 	@Override
 	public void setMessage(final String title) {
+		final Context ctx = this;
 		this.runOnUiThread(new Runnable(){
 			@Override
 			public void run(){
-				TextView view = (TextView) findViewById(R.id.title);
-				view.setText(title.toCharArray(), 0, title.length());
+				Toast toast = Toast.makeText(ctx, title, Toast.LENGTH_SHORT);
+				toast.show();
 			}
 		});
 	}
@@ -129,7 +133,7 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 	public void setBackend(ATWeScrabble backend){
 		aws = backend;
 		final Activity owner = this;
-		this.runOnUiThread(new Runnable(){
+		runOnUiThread(new Runnable(){
 			@Override
 			public void run(){
 				table = (GridView) findViewById(R.id.table);
@@ -140,10 +144,30 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 
 	@Override
 	public void setAppTitle(final String title) {
-		this.runOnUiThread(new Runnable(){
+		runOnUiThread(new Runnable(){
 			@Override
 			public void run(){
 				setTitle(title);
+			}
+		});
+	}
+
+	@Override
+	public void setTeam(final int team) {
+		runOnUiThread(new Runnable(){
+			@Override
+			public void run(){
+				TextView text = (TextView) findViewById(R.id.teamLabel);
+				switch (team){
+				case WeScrabbleUI.TeamA:
+					text.setText("Team A");
+					text.setTextColor(Color.RED);
+					break;
+				case WeScrabbleUI.TeamB:
+					text.setText("Team B");
+					text.setTextColor(Color.BLUE);
+					break;
+				}
 			}
 		});
 	}

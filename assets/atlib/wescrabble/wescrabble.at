@@ -55,26 +55,53 @@ def makeWeScrabble(UI){
             def addWord(sugg){
                 applySuggestion(sugg);
             };
+
+            def hasTeam(){
+                team != nil;
+            };
+
+            def getNewcomerTeam(){
+                TeamA;
+            };
         };
 
         def everybody := ambient: remoteInterface as: Everybody;
+
+        def assignTeamWith: other {
+            /* Are team already formed ? */
+            def teamsFormed := other<-hasTeam()@TwoWay;
+
+            teamsFormed<-ifTrue: {
+                /* Teams already formed: ask someone for a team to join */
+                when: other<-getNewcomerTeam() becomes: { |teamTag|
+                    team := ambient: remoteInterface as: teamTag;
+                };
+            } ifFalse: {
+                /* Teams not formed: assign teams based on random id */
+                when: other<-getRandomID()@TwoWay becomes: {|otherID|
+                    while: {(otherID == randomID).and: {discovered.not}}
+                    do: {randomID = randInt;};
+
+                    if: (randomID < otherID)
+                    then: {
+                        team := ambient: remoteInterface as: TeamA;
+                        UI.setTeam(0);
+                    }
+                    else: {
+                        team := ambient: remoteInterface as: TeamB;
+                        UI.setTeam(1);
+                    };
+
+                    UI.setMessage("In game !");
+                };
+            };
+        };
 
         def discoverPeer(other){
             when: other<-getName()@TwoWay becomes: {|name|
                 peers.put(name, other);
                 UI.setMessage("Discovered " + name + " !");
-                if: (team == nil)
-                then: {
-                    when: other<-getRandomID()@TwoWay becomes: {|otherID|
-                        while: {(otherID == randomID).and: {discovered.not}}
-                        do: {randomID = randInt;};
-
-                        if: (randomID < otherID)
-                        then: {team := ambient: remoteInterface as: TeamA;}
-                        else: {team := ambient: remoteInterface as: TeamB;}; 
-                        UI.setMessage("Joining team " + team);
-                    };
-                };
+                (team == nil).ifTrue: {assignTeamWith: other};
             };
         };
 

@@ -32,7 +32,7 @@
         android:textSize="45dp" />
 
     <TextView
-        android:id="@+id/textView1"
+        android:id="@+id/teamLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/textView2"

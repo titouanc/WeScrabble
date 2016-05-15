@@ -4,40 +4,29 @@ def Peer := isolate: {
     def ref;
     def online;
     def backlog;
-    def futs;
 
     def init(ref, online := true){
         self.ref := ref;
         self.online := online;
         self.backlog := [];
-        self.futs := [];
 
         when: ref disconnected: {online = false};
         when: ref reconnected: {
             online = true;
             send_backlog();
         };
-
-        system.println("Discover peer: " + ref);
     };
 
     def send_backlog(){
-        (1**(backlog.length+1)).each: {|i|
-            def msg := futurize(backlog[i], futs[i]);
-            ref <+ msg;
-        };
+        backlog.each: {|msg| ref <+ msg};
         backlog := [];
-        futs := [];
     };
 
     def send(msg){
         if: online
         then: {ref <+ msg;}
         else: {
-            def [fut, _] := makeFuture();
             backlog := backlog + [msg];
-            futs += [fut];
-            fut;
         }
     };
 };
@@ -45,17 +34,21 @@ def Peer := isolate: {
 def AmbientRefMirror := mirror: {
     def peers;
     def offline;
+    def backlog := [];
 
     def init(base, T){
         super^init(base);
         peers := [];
 
         whenever: T discovered: {|remote|
-            peers := peers + [Peer.new(remote)];
+            def p := Peer.new(remote);
+            peers := peers + [p];
+            backlog.each: {|msg| p.send(msg)};
         };
     };
 
     def receive(msg){
+        backlog := backlog + [msg];
         peers.each: {|p| p.send(msg)};
     };
 };

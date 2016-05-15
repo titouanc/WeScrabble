@@ -16,6 +16,9 @@ public class ScrabbleCell extends TextView {
 	private int x, y;
 	private ATWeScrabble ws;
 	
+	/**
+	 * Add a word in an asynchronous task!
+	 */
 	private class AddWordTask extends AsyncTask<Void, Void, Void> {
 		private String word;
 		private Boolean horizontally;

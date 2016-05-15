@@ -8,12 +8,17 @@ def sessionTest(){
         def assert: obj equals: expected {self.assertEquals(obj, expected)};
 
         /* Helpers */
-        def sugg(res, @args){
+        def sugg_valid(@args){
             self.assert: Suggestion.new("test", @args).validOn(table)
-                 equals: res;
+                 equals: true;
         };
-        def sugg_valid(@args){sugg(true, @args)};
-        def sugg_invalid(@args){sugg(false, @args)};
+        def sugg_invalid(reason, @args){
+            def message;
+            self.assert: Suggestion.new("test", @args)
+                                   .validOn(table, {|err| message := err;})
+                 equals: false;
+            self.assert: message equals: reason;
+        };
 
         /* Tests */
         def setUp(){
@@ -26,29 +31,29 @@ def sessionTest(){
         };
 
         def testNoTableUnderflow() {
-            sugg_invalid("fuzzy", 0, 1, true);
-            sugg_invalid("fuzzy", 1, 0, false);
+            sugg_invalid("The word fall outside of the table", "fuzzy", 0, 1, true);
+            sugg_invalid("The word fall outside of the table", "fuzzy", 1, 0, false);
         };
 
         def testNoTableOverflow() {
-            sugg_invalid("fuzzy", 1000, 1, true);
-            sugg_invalid("fuzzy", 1, 1000, false);
+            sugg_invalid("The word fall outside of the table", "fuzzy", 1000, 1, true);
+            sugg_invalid("The word fall outside of the table", "fuzzy", 1, 1000, false);
         };
 
         def testNoWordOverflow() {
-            sugg_invalid("fuzzy", 12, 1, false);
-            sugg_invalid("fuzzy", 1, 12, true);
+            sugg_invalid("The word fall outside of the table", "fuzzy", 12, 1, false);
+            sugg_invalid("The word fall outside of the table", "fuzzy", 1, 12, true);
         };
 
         def testNotMatchingLetter(){
             sugg_valid("car", 4, 5, false);
             sugg_valid("car", 5, 4, true);
-            sugg_invalid("fuzzy", 4, 5, false);
-            sugg_invalid("fuzzy", 5, 4, true);
+            sugg_invalid("Conflicting letter at row=5,col=5", "fuzzy", 4, 5, false);
+            sugg_invalid("Conflicting letter at row=5,col=5", "fuzzy", 5, 4, true);
         };
 
         def testInvalidWord(){
-            sugg_invalid("qsd", 1, 1, true);
+            sugg_invalid("The word is not valid", "qsd", 1, 1, true);
         };
 
         def testRequiredLetters(){
