@@ -1,0 +1,26 @@
+import /.wescrabble.suggestion;
+
+def makeLocalInterface(weScrabble, UI){
+    object: {
+        def getLetterAt(row, column){
+            weScrabble.table[row+1][column+1];
+        };
+
+        def addWord(word, row, col, horizontally){
+            def sugg := Suggestion.new(weScrabble.myName, word, row+1, col+1, horizontally);
+            def valid := sugg.validOn(weScrabble.table);
+            valid.ifTrue: {
+                weScrabble.applySuggestion(sugg);
+                weScrabble.everybody<-addWord(sugg);
+            };
+            valid;
+        };
+
+        def addObserver(obs){
+            weScrabble.observers.add(obs);
+        };
+        UI.setBackend(self);
+    };
+};
+
+self;

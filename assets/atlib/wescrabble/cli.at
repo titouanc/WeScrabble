@@ -17,5 +17,5 @@ def player(name){
     };
 };
 
-player("Titou");
+player("Bot");
 player("Clara");

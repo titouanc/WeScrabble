@@ -4,27 +4,30 @@ def Peer := isolate: {
     def ref;
     def online;
     def backlog;
+    def futs;
 
     def init(ref, online := true){
-        self.ref = ref;
-        self.online = online;
+        self.ref := ref;
+        self.online := online;
         self.backlog := [];
-        self.futures := [];
+        self.futs := [];
 
         when: ref disconnected: {online = false};
         when: ref reconnected: {
             online = true;
             send_backlog();
         };
+
+        system.println("Discover peer: " + ref);
     };
 
     def send_backlog(){
         (1**(backlog.length+1)).each: {|i|
-            def msg := futurize(backlog[i], futures[i]);
+            def msg := futurize(backlog[i], futs[i]);
             ref <+ msg;
         };
         backlog := [];
-        futures := [];
+        futs := [];
     };
 
     def send(msg){
@@ -33,7 +36,7 @@ def Peer := isolate: {
         else: {
             def [fut, _] := makeFuture();
             backlog := backlog + [msg];
-            futures += [fut];
+            futs += [fut];
             fut;
         }
     };
@@ -59,9 +62,10 @@ def AmbientRefMirror := mirror: {
 
 deftype AmbientRef;
 
-def ambient: T {
+def ambient: obj as: Type {
     object: {} taggedAs: [AmbientRef] mirroredBy: {|base|
-        AmbientRefMirror.new(base, T);
+        export: obj as: Type;
+        AmbientRefMirror.new(base, Type);
     };
 };
 

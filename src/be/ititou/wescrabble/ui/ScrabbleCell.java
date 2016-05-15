@@ -6,6 +6,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.os.AsyncTask;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.EditText;
@@ -15,19 +16,39 @@ public class ScrabbleCell extends TextView {
 	private int x, y;
 	private ATWeScrabble ws;
 	
+	private class AddWordTask extends AsyncTask<Void, Void, Void> {
+		private String word;
+		private Boolean horizontally;
+		
+		public AddWordTask(String word, Boolean horizontally){
+			super();
+			this.word = word;
+			this.horizontally = horizontally;
+		}
+		
+		@Override
+		protected Void doInBackground(Void... arg0) {
+			ws.addWord(word, y, x, horizontally);
+			return null;
+		}
+	}
+	
 	private class AddWordDialog extends Dialog {
+		void addWord(String word, Boolean horizontally){
+			new AddWordTask(word, horizontally).execute((Void) null);
+		}
+		
 		private class OnClickListener implements View.OnClickListener {
 			@Override
 			public void onClick(View v) {
 				int id = v.getId();
-				Boolean r = true;
 				
 				switch (id){
 				case R.id.confirmHorizontalButton:
-					r = ws.addWord(getWord(), y, x, true);
+					addWord(getWord(), true);
 					break;
 				case R.id.confirmVerticalButton:
-					r = ws.addWord(getWord(), y, x, false);
+					addWord(getWord(), false);
 					break;
 				}
 				

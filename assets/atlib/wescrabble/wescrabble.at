@@ -1,7 +1,12 @@
 import /.at.lang.futures;
 import ~.ambient;
 import ~.suggestion;
+
+/* Direct communication */
 deftype AnAwesomeWeScrabble;
+
+/* Ambient types */
+deftype Everybody;
 deftype TeamA;
 deftype TeamB;
 
@@ -10,44 +15,32 @@ def randInt(){
 };
 
 def makeWeScrabble(UI){
-    def myName := UI.getMyName();
-    def randomID := randInt();
-    def discovered := false;
-    def team := nil;
-    def observers := [];
     UI.setAppTitle("We Scrabble /o/");
 
     object: {
+        def myName := UI.getMyName();
+        def randomID := randInt();
+        def discovered := false;
+        def team := nil;
+        def observers := jlobby.java.util.LinkedList.new();
         def peers := jlobby.java.util.HashMap.new();
         def table := (1**16).map: {|row|
             (1**16).map: {|column| Suggestion.EMPTY}
         };
 
         def notifyObservers(){
-            observers.each: {|o| o.update()};
-        };
-
-        def localInterface := object: {
-            def getLetterAt(row, column){
-                table[row+1][column+1];
-            };
-
-            def addWord(word, row, col, horizontally){
-                def sugg := Suggestion.new(myName, word, row+1, col+1, horizontally);
-                def valid := sugg.validOn(table);
-                valid.ifTrue: {
-                    sugg.applyOn(table);
-                    notifyObservers();
-                };
-                valid;
-            };
-
-            def addObserver(obs){
-                observers := observers + [obs];
+            def it := observers.iterator();
+            while: { it.hasNext() } do: {
+                it.next().update();
             };
         };
 
-        UI.setBackend(localInterface);
+        def applySuggestion(sugg){
+            sugg.applyOn(table);
+            notifyObservers();
+        };
+
+        def localInterface := /.wescrabble.localif.makeLocalInterface(self, UI);
 
         def remoteInterface := object: {
             def getName(){
@@ -58,7 +51,13 @@ def makeWeScrabble(UI){
             def getRandomID(){
                 randomID;
             };
+
+            def addWord(sugg){
+                applySuggestion(sugg);
+            };
         };
+
+        def everybody := ambient: remoteInterface as: Everybody;
 
         def discoverPeer(other){
             when: other<-getName()@TwoWay becomes: {|name|
@@ -71,8 +70,8 @@ def makeWeScrabble(UI){
                         do: {randomID = randInt;};
 
                         if: (randomID < otherID)
-                        then: {team := ambient: TeamA;}
-                        else: {team := ambient: TeamB;}; 
+                        then: {team := ambient: remoteInterface as: TeamA;}
+                        else: {team := ambient: remoteInterface as: TeamB;}; 
                         UI.setMessage("Joining team " + team);
                     };
                 };

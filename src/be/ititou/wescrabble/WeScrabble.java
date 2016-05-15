@@ -80,6 +80,7 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 		this.setContentView(R.layout.activity_we_scrabble);
 	}
 	
+	@Override
 	protected void onActivityResult(int rq, int res, Intent data) {
     	switch (rq){
     	case _ASSET_INSTALLER_:

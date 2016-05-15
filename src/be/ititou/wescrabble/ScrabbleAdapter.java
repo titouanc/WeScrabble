@@ -7,7 +7,6 @@ import android.app.Activity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
-import android.widget.TextView;
 
 public class ScrabbleAdapter extends BaseAdapter implements WeScrabbleObserver {
 	private ATWeScrabble ws;
