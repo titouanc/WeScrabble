@@ -17,7 +17,7 @@ public interface WeScrabbleUI {
 	 * Set the informative message content
 	 * @param message The message content
 	 */
-	public void setMessage(String message);
+	public void showMessage(String message);
 	
 	/**
 	 * Set the application title bar

@@ -1,0 +1,13 @@
+/* Fixtures for tests (can be imported in actors) */
+
+def Person(name){
+    object: {
+        def recorded := [];
+
+        def hit(arg){
+            recorded := recorded + [arg];
+        };
+    };
+};
+
+self;

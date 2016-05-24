@@ -1,31 +1,50 @@
 import /.at.lang.futures;
-import ~.ambient;
+import ~.ambientref;
 import ~.suggestion;
 
 /* Direct communication */
 deftype AnAwesomeWeScrabble;
 
-/* Ambient types */
-deftype Everybody;
-deftype TeamA;
-deftype TeamB;
-
-def randInt(){
-    jlobby.java.util.Random.new().nextInt();
-};
+def alphabet := "abcdefghijklmnopqrstubwxyz".explode();
 
 def makeWeScrabble(UI){
     UI.setAppTitle("We Scrabble /o/");
 
+    def rand := jlobby.java.util.Random.new();
+
     object: {
-        def myName := UI.getMyName();
-        def randomID := randInt();
+        /* Ambient types */
+        deftype Everybody;
+        deftype TeamA;
+        deftype TeamB;
+
+        def randomID := rand.nextInt();
         def discovered := false;
         def team := nil;
         def observers := jlobby.java.util.LinkedList.new();
         def peers := jlobby.java.util.HashMap.new();
         def table := (1**16).map: {|row|
             (1**16).map: {|column| Suggestion.EMPTY}
+        };
+        def myLetters := [];
+
+        def takeLetter(letter){
+            def found := false;
+            myLetters := myLetters.filter: {|l|
+                if: (found.not.and: {l == letter})
+                then: {
+                    found := true;
+                    false;
+                }
+                else: {
+                    true;
+                }
+            };
+            found;
+        };
+
+        def setDiscovered(){
+            discovered := true;
         };
 
         def notifyObservers(){
@@ -35,36 +54,32 @@ def makeWeScrabble(UI){
             };
         };
 
+        /* Refill myLetters with random letters */
+        def refill(){
+            def r := 7 - myLetters.length;
+            def newLetters := (0**r).map: {|_|
+                def i := 1 + rand.nextInt().abs()%26;
+                alphabet[i];
+            };
+            myLetters := myLetters + newLetters;
+        };
+
+        /* Apply a suggestion on my state then notify observers */
         def applySuggestion(sugg){
             sugg.applyOn(table);
             notifyObservers();
         };
 
-        def localInterface := /.wescrabble.localif.makeLocalInterface(self, UI);
-
-        def remoteInterface := object: {
-            def getName(){
-                discovered := true;
-                myName;
-            };
-
-            def getRandomID(){
-                randomID;
-            };
-
-            def addWord(sugg){
-                applySuggestion(sugg);
-            };
-
-            def hasTeam(){
-                team != nil;
-            };
-
-            def getNewcomerTeam(){
-                TeamA;
-            };
+        def play(sugg){
+            def required := sugg.requiredLetters(table);
+            required.each: {|l| takeLetter(l)};
+            applySuggestion(sugg);
+            everybody<-addWord(sugg);
         };
 
+        def localInterface := /.wescrabble.localif.makeLocalInterface(self, UI);
+
+        def remoteInterface := /.wescrabble.remoteif.makeRemoteInterface(self, UI);
         def everybody := ambient: remoteInterface as: Everybody;
 
         def assignTeamWith: other {
@@ -73,7 +88,7 @@ def makeWeScrabble(UI){
 
             teamsFormed<-ifTrue: {
                 /* Teams already formed: ask someone for a team to join */
-                when: other<-getNewcomerTeam() becomes: { |teamTag|
+                when: other<-getNewcomerTeam()@TwoWay becomes: { |teamTag|
                     team := ambient: remoteInterface as: teamTag;
                 };
             } ifFalse: {
@@ -92,7 +107,7 @@ def makeWeScrabble(UI){
                         UI.setTeam(1);
                     };
 
-                    UI.setMessage("In game !");
+                    UI.showMessage("In game !");
                 };
             };
         };
@@ -100,12 +115,13 @@ def makeWeScrabble(UI){
         def discoverPeer(other){
             when: other<-getName()@TwoWay becomes: {|name|
                 peers.put(name, other);
-                UI.setMessage("Discovered " + name + " !");
+                UI.showMessage("Discovered " + name + " !");
                 (team == nil).ifTrue: {assignTeamWith: other};
             };
         };
 
-        UI.setMessage("Hello " + myName + " ! Waiting for other players...");
+        refill();
+        UI.showMessage("Hello " + UI.getMyName() + " ! Waiting for other players...");
 
         export: remoteInterface as: AnAwesomeWeScrabble;
         whenever: AnAwesomeWeScrabble discovered: &discoverPeer;

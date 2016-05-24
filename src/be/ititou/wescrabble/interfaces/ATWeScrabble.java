@@ -11,5 +11,5 @@ public interface ATWeScrabble {
 		
 	public Boolean addWord(String word, int row, int column, Boolean horizontally);
 	
-	public void addObserver(WeScrabbleObserver observer);
+	public void addObserver(TableObserver observer);
 }

@@ -10,9 +10,9 @@ def Peer := isolate: {
         self.online := online;
         self.backlog := [];
 
-        when: ref disconnected: {online = false};
+        when: ref disconnected: {online := false};
         when: ref reconnected: {
-            online = true;
+            online := true;
             send_backlog();
         };
     };
@@ -50,16 +50,21 @@ def AmbientRefMirror := mirror: {
     def receive(msg){
         backlog := backlog + [msg];
         peers.each: {|p| p.send(msg)};
+        peers.length;
     };
 };
 
 deftype AmbientRef;
 
-def ambient: obj as: Type {
+def ambientOf: Type {
     object: {} taggedAs: [AmbientRef] mirroredBy: {|base|
-        export: obj as: Type;
         AmbientRefMirror.new(base, Type);
     };
+};
+
+def ambient: obj as: Type {
+    export: obj as: Type;
+    ambientOf: Type;
 };
 
 self;

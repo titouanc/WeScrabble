@@ -1,14 +1,14 @@
 package be.ititou.wescrabble;
 
 import be.ititou.wescrabble.interfaces.ATWeScrabble;
-import be.ititou.wescrabble.interfaces.WeScrabbleObserver;
+import be.ititou.wescrabble.interfaces.TableObserver;
 import be.ititou.wescrabble.ui.ScrabbleCell;
 import android.app.Activity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 
-public class ScrabbleAdapter extends BaseAdapter implements WeScrabbleObserver {
+public class ScrabbleAdapter extends BaseAdapter implements TableObserver {
 	private ATWeScrabble ws;
 	private Activity owner;
 	

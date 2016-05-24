@@ -62,6 +62,16 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 			return null;
 		}
 	}
+	
+	private StartIATTask iatRunner;
+	
+	@Override
+	protected void onStop(){
+		super.onStop();
+		if (iatRunner != null){
+			iatRunner.cancel(true);
+		}
+	}
 
 	@Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,7 +98,8 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
     	switch (rq){
     	case _ASSET_INSTALLER_:
     		if (res == Activity.RESULT_OK){
-    			new StartIATTask().execute((Void) null);
+    			iatRunner = new StartIATTask();
+    			iatRunner.execute((Void) null);
     		}
     	}
     }
@@ -118,7 +129,7 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 	}
 
 	@Override
-	public void setMessage(final String title) {
+	public void showMessage(final String title) {
 		final Context ctx = this;
 		this.runOnUiThread(new Runnable(){
 			@Override

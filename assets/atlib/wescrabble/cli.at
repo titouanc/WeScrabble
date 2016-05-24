@@ -1,12 +1,12 @@
 network.online;
 
-def player(name){
+def player(name, words := []){
     actor: {
         def cli := object: {
             def localIf;
 
             def getMyName(){name;};
-            def setMessage(title){
+            def showMessage(title){
                 system.println("=== Set message: " + title + " ===");
             };
             def setAppTitle(title){
@@ -28,7 +28,10 @@ def player(name){
                 update();
             };
             def setTeam(t){
-                setMessage("Joined team " + t);
+                showMessage("Joined team " + t);
+                words.each: {|w|
+                    localIf.addWord(@w)
+                }
             };
         };
 
@@ -36,5 +39,11 @@ def player(name){
     };
 };
 
-player("Bot");
-//player("Clara");
+player("Bot", [
+    ["loop", 3, 3, true],
+    ["door", 2, 5, false]
+]);
+
+player("Clara", [
+    ["libido", 3, 3, false]
+]);
