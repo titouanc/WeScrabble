@@ -45,6 +45,11 @@ def sessionTest(){
             sugg_invalid("The word fall outside of the table", "fuzzy", 1, 12, true);
         };
 
+        def testWordJustFit() {
+            sugg_valid("car", 13, 13, true);
+            sugg_valid("car", 13, 13, false);
+        };
+
         def testNotMatchingLetter(){
             sugg_valid("car", 4, 5, false);
             sugg_valid("car", 5, 4, true);

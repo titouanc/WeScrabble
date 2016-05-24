@@ -98,8 +98,8 @@ def Suggestion := isolate: {
             ["The word fall outside of the table", `[
                 (i > 0), (j > 0),
                 (i <= #(table.length)), (j <= #(table.length)),
-                (if: horizontal then: {j+word.length <= #(table.length)}
-                                else: {i+word.length <= #(table.length)})
+                (if: horizontal then: {j+word.length-1 <= #(table.length)}
+                                else: {i+word.length-1 <= #(table.length)})
             ]],
             ["The word is not valid", `[
                 (findWord: word)

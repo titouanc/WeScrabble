@@ -2,6 +2,9 @@ import /.at.lang.futures;
 import /.wescrabble.ambientref;
 import /.wescrabble.fixtures;
 
+// Delay to apply when expecting an ambient ref to be online
+def AMBIENT_DELAY := 500.millisec;
+
 def sessionTest(){
     extend: /.at.unit.test.UnitTest.new("TestAmbient") with: {
         /* Test that an async call on an Ambient ref returns the number of
@@ -20,7 +23,7 @@ def sessionTest(){
             aPerson("b", PTestAsyncAmbientSize);
             aPerson("c", PTestAsyncAmbientSize);
 
-            /.at.support.timer.when: 1.seconds elapsedWithFuture: {
+            /.at.support.timer.when: AMBIENT_DELAY elapsedWithFuture: {
                 def r := a<-hit("hi");
                 self.assertEquals(r, 2);
             };
@@ -40,12 +43,12 @@ def sessionTest(){
             };
 
             def [fut, res] := makeFuture();
-            /.at.support.timer.when: 1.seconds elapsed: {
+            /.at.support.timer.when: AMBIENT_DELAY elapsed: {
                 def a := Person("a");
                 def aref := ambient: a as: PTestAsyncAmbientBuffer;
 
                 // A connects then assert it gets the '42' message
-                /.at.support.timer.when: 1.seconds elapsed: {
+                /.at.support.timer.when: AMBIENT_DELAY elapsed: {
                     self.assertEquals(a.recorded.length, 1);
                     self.assertEquals(a.recorded[1], 42);
                     res.resolve(true);
