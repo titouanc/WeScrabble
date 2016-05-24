@@ -53,8 +53,8 @@ def sessionTest(){
         def testNotMatchingLetter(){
             sugg_valid("car", 4, 5, false);
             sugg_valid("car", 5, 4, true);
-            sugg_invalid("Conflicting letter at row=5,col=5", "fuzzy", 4, 5, false);
-            sugg_invalid("Conflicting letter at row=5,col=5", "fuzzy", 5, 4, true);
+            sugg_invalid("Conflicting letter expecting A got U", "fuzzy", 4, 5, false);
+            sugg_invalid("Conflicting letter expecting A got U", "fuzzy", 5, 4, true);
         };
 
         def testInvalidWord(){

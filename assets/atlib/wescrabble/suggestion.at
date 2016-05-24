@@ -94,7 +94,7 @@ def Suggestion := isolate: {
 
     /* True if this suggestion is valid on given table */
     def validOn(table, onError := {|@_|}){
-        def conditions := [
+        satMessage([
             ["The word fall outside of the table", `[
                 (i > 0), (j > 0),
                 (i <= #(table.length)), (j <= #(table.length)),
@@ -104,14 +104,14 @@ def Suggestion := isolate: {
             ["The word is not valid", `[
                 (findWord: word)
             ]]
-        ]
-        + (each: {|w, i, j|
-            ["Conflicting letter at row="+i+",col="+j, `[
-                ((#table[#i][#j] == #EMPTY).or: {#table[#i][#j] == #w})
-            ]]
-        });
-
-        satMessage(conditions, onError);
+        ], onError).and: {
+            satMessage(each: {|w, i, j|
+                def present := table[i][j];
+                ["Conflicting letter expecting " + present.toUpperCase() + " got " + w.toUpperCase(), `[
+                    ((#present == #EMPTY).or: {#present == #w})
+                ]]
+            }, onError);
+        };
     };
 
     /* Apply the suggestion to the table: copy all letters to their position */
