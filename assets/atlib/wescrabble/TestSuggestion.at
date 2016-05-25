@@ -97,14 +97,6 @@ def sessionTest(){
             self.assert: (s.is: Suggestion.new("test", "hello", 1, 1, false))
                  equals: false;
         };
-
-        def testComparable(){
-            def s := Suggestion.new("Titou", "banana", 1, 1, true).comparable;
-            def t := Suggestion.new("Titou", "boat", 1, 1, false, 2).comparable;
-            self.assert: s.compareTo(t) equals: -1;
-            self.assert: s.compareTo(s) equals: 0;
-            self.assert: t.compareTo(s) equals: 1;
-        };
     };
 };
 
