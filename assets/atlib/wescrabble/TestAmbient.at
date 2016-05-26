@@ -60,4 +60,4 @@ def sessionTest(){
     };
 };
 
-sessionTest().runTest();
+self;
