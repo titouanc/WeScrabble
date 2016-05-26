@@ -1,4 +1,4 @@
-import ~.suggestion;
+import /.wescrabble.suggestion;
 
 def sessionTest(){
     extend: /.at.unit.test.UnitTest.new("TestSuggestion") with: {

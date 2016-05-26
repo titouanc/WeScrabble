@@ -1,6 +1,6 @@
 import /.at.lang.futures;
 import /.wescrabble.ambientref;
-import /.wescrabble.fixtures;
+import ~.fixtures;
 
 // Delay to apply when expecting an ambient ref to be online
 def AMBIENT_DELAY := 500.millisec;
@@ -16,7 +16,7 @@ def sessionTest(){
             def aPerson(name, type){
                 actor: {|name, type|
                     import /.wescrabble.ambientref;
-                    import /.wescrabble.fixtures;
+                    import ~.fixtures;
                     ambient: Person(name) as: type;
                 };
             };
@@ -37,7 +37,7 @@ def sessionTest(){
             // B connects and hits 42
             actor: {|PTestAsyncAmbientBuffer|
                 import /.wescrabble.ambientref;
-                import /.wescrabble.fixtures;
+                import ~.fixtures;
                 def bref := ambient: Person("b") as: PTestAsyncAmbientBuffer;
                 bref<-hit(42);
             };

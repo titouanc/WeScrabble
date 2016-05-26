@@ -1,0 +1,2 @@
+~.TestSuggestion.sessionTest().runTest();
+~.TestAmbient.sessionTest().runTest();
