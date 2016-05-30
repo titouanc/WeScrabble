@@ -1,2 +1,3 @@
 ~.TestSuggestion.sessionTest().runTest();
-~.TestAmbient.sessionTest().runTest();
+//~.TestAmbient.sessionTest().runTest();
+~.TestLetterSet.sessionTest().runTest();

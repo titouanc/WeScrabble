@@ -1,0 +1,42 @@
+import /.wescrabble.letterset;
+
+def ls(str){LetterSet.new(str.explode)};
+
+def sessionTest(){
+    extend: /.at.unit.test.UnitTest.new("TestLetterSet") with: {
+        def assertSet: a equals: b {
+            self.assertTrue((a - b).positive.and: {(b-a).positive});
+        };
+
+        def testSetSize(){
+            def a := ls("titou");
+            self.assertEquals(a.size(), 5);
+        };
+
+        def testSetOrder(){
+            assertSet: ls("abcdef") equals: ls("bdfeca"); 
+        };
+
+        def testSetAdd(){
+            def a := ls("titou");
+            def b := ls("clara");
+            def c := ls("titouclara");
+            assertSet: a+b equals: c;
+        };
+
+        def testSetSub(){
+            def a := ls("openis");
+            def b := ls("ois");
+            def c := ls("pen");
+            assertSet: a-b equals: c;
+        };
+
+        def testPositive(){
+            self.assertTrue((ls("lolilol") - ls("lol")).positive);
+            self.assertTrue((ls("lol") - ls("lol")).positive);
+            self.assertFalse((ls("lol") - ls("lolilol")).positive);
+        };
+    };
+};
+
+self;

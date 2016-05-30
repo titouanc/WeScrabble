@@ -5,6 +5,10 @@ import ~.ambientref;
 import ~.suggestion;
 import ~.letterset;
 
+def log(@args){
+    system.println(args.join(" "));
+};
+
 /* Direct P2P communication type */
 deftype AnAwesomeWeScrabble;
 
@@ -65,6 +69,7 @@ def makeWeScrabble(UI){
                 shuffle(alphabet).each: {|l|
                     Ts.inject: tuple: [Letter, TeamA, l];
                     Ts.inject: tuple: [Letter, TeamB, l];
+                    log("Inject letter", l, "for both teams");
                 }
             };
         };
@@ -75,6 +80,7 @@ def makeWeScrabble(UI){
             then: {
                 Ts.when: (tuple: [Letter, myTeam, var: `l]) in: {
                     letters.add(l);
+                    log("Pick letter", l);
                     pickLetters(n-1);
                 };
                 nil;
@@ -89,11 +95,6 @@ def makeWeScrabble(UI){
                     return(false);
                 };
 
-                if: sugg.validOn(table, {|err| UI.showMessage(err)}).not
-                then: {
-                    return(false);
-                };
-
                 def newLetters := letters - LetterSet.new(sugg.requiredLetters(table));
                 if: newLetters.positive.not
                 then: {
@@ -101,9 +102,14 @@ def makeWeScrabble(UI){
                     return(false);
                 };
 
-                Ts.inject: (tuple: [Word, myTeam, sugg]);
-                letters := newLetters;
-                true;
+                if: sugg.validOn(table, {|err| UI.showMessage(err)})
+                then: {
+                    Ts.inject: (tuple: [Word, myTeam, sugg]);
+                    letters := newLetters;
+                    return(true);
+                };
+                
+                false;
             }.escape()
         };
 
@@ -140,27 +146,25 @@ def makeWeScrabble(UI){
         };
 
         def localInterface := object: {
-            object: {
-                def getLetterAt(row, column){
-                    mySelf.table[row+1][column+1]
-                };
-
-                def addWord(word, row, col, horizontally){
-                    mySelf.play(
-                        Suggestion.new(
-                            mySelf.myName, word, row, col, horizontally
-                        )
-                    );
-                };
-
-                def addObserver := mySelf.observers.&add;
-
-                def getMyLetters(){
-                    mySelf.letters;
-                };
-                
-                UI.setBackend(self);
+            def getLetterAt(row, column){
+                mySelf.table[row+1][column+1]
             };
+
+            def addWord(word, row, col, horizontally){
+                mySelf.play(
+                    Suggestion.new(
+                        mySelf.myName, word, row, col, horizontally
+                    )
+                );
+            };
+
+            def addObserver := mySelf.observers.&add;
+
+            def getMyLetters(){
+                mySelf.letters.toList();
+            };
+            
+            UI.setBackend(self);
         };
 
         export: remoteInterface as: AnAwesomeWeScrabble;

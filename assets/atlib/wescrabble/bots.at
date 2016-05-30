@@ -1,11 +1,13 @@
-def makeBot(name, t, @sugg){
-    actor: {|name, t, sugg|
-        import /.wescrabble.weScrabbleNew;
+def makeBot(name, @sugg){
+    actor: {|name, sugg|
+        import /.wescrabble.wescrabble;
 
         def s := makeWeScrabble(object: {
             def getMyName(){name};
             def setAppTitle(@_){};
-            def setTeam(i){system.println(">>> [" + name + "] Set team " + i + " <<<")};
+            def setTeam(i){
+                system.println(">>> [" + name + "] Set to team " + i + " <<<");
+            };
             def showMessage(x){system.println("[" + name + "] " + x)};
             def setBackend(_){
                 _.addObserver(object:{
@@ -19,7 +21,7 @@ def makeBot(name, t, @sugg){
                         system.println();
                     };
                 });
-                /.at.support.timer.when: t.seconds elapsed: {
+                /.at.support.timer.when: 12.seconds elapsed: {
                     _.addWord(@sugg);
                 }
             };
@@ -27,5 +29,8 @@ def makeBot(name, t, @sugg){
     };
 };
 
-makeBot("Titou", 10, "banana", 3, 3, true);
-makeBot("Cluru", 11, "clown", 3, 3, true);
+makeBot("Titou", "banana", 3, 3, true);
+
+///.at.support.timer.when: 2.seconds elapsed: {
+//    makeBot("Cluru", "clown", 3, 3, true);
+//};
