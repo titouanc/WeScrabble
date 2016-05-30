@@ -1,0 +1,72 @@
+def LetterSet := object: {
+    def set;
+
+    def add(letter){
+        def x := set.get(letter);
+        if: x == nil then: {x := 0};
+        set.put(letter, x+1);
+    };
+
+    def init(letters){
+        set := jlobby.java.util.HashMap.new();
+        letters.each: &add;
+    };
+
+    def -(other){
+        def copy := LetterSet.new([]);
+        copy.set := set.clone();
+
+        def it := other.set.keySet().iterator();
+        while: {it.hasNext()} do: {
+            def l := it.next();
+            def x := copy.set.get(l);
+            def y := other.set.get(l);
+            if: x == nil then: {x := 0};
+            copy.set.put(l, x-y);
+        };
+
+        copy;
+    };
+
+    def positive(){
+        def res := true;
+        def it := set.values.iterator();
+        while: {res.and: {it.hasNext()}} do: {
+            if: it.next() < 0
+            then: {res := false}
+        };
+        res;
+    };
+
+    def repr(){ 
+        set.toString();
+    };
+
+    def toList(){
+        def res := jlobby.java.util.ArrayList.new();
+        def it := set.keySet().iterator();
+        while: {it.hasNext()} do: {
+            def l := it.next();
+            def x := set.get(l);
+            0.to: x do: {|_| res.add(l)}
+        };
+        res
+    };
+};
+
+def shuffle(arr){
+    def rnd := jlobby.java.util.Random.new();
+
+    def i := 0;
+    def r;
+    def copy[arr.length]{i := i+1; arr[i]};
+    def  res[arr.length]{
+        i := 1 + rnd.nextInt(copy.length);
+        r := copy[i];
+        copy.atPut(i, nil);
+        copy := copy.filter: {|x| x != nil};
+        r;
+    };
+};
+
+self;

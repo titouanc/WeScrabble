@@ -1,0 +1,31 @@
+def makeBot(name, t, @sugg){
+    actor: {|name, t, sugg|
+        import /.wescrabble.weScrabbleNew;
+
+        def s := makeWeScrabble(object: {
+            def getMyName(){name};
+            def setAppTitle(@_){};
+            def setTeam(i){system.println(">>> [" + name + "] Set team " + i + " <<<")};
+            def showMessage(x){system.println("[" + name + "] " + x)};
+            def setBackend(_){
+                _.addObserver(object:{
+                    def update(){
+                        def table := (0**15).map: {|row|
+                            (0**15).map: {|col|
+                                _.getLetterAt(row, col);
+                            };
+                        };
+                        def repr := (table.map: {|r| r.join(" ")}).join("\n");
+                        system.println();
+                    };
+                });
+                /.at.support.timer.when: t.seconds elapsed: {
+                    _.addWord(@sugg);
+                }
+            };
+        });
+    };
+};
+
+makeBot("Titou", 10, "banana", 3, 3, true);
+makeBot("Cluru", 11, "clown", 3, 3, true);
