@@ -2,4 +2,4 @@
 
 IAT=./iat
 
-$IAT tests/runTests.at
+$IAT -p tests/runTests.at

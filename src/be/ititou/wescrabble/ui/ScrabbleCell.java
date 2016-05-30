@@ -101,7 +101,7 @@ public class ScrabbleCell extends TextView {
 				return Color.rgb(0xff, 0x7e, 0x7e);
 			}
 			return Color.rgb(0xc5, 0xf6, 0x9e);
-		} 
+		}
 		// Diagonals
 		if (x == y || x == 14-y){
 			return Color.rgb(0x9e, 0xce, 0xf6);
@@ -110,7 +110,7 @@ public class ScrabbleCell extends TextView {
 	}
 	
 	public void update(){
-		setText(ws.getLetterAt(y, x));
+		setText(ws.getLetterAt(y, x).toUpperCase());
 		setBackgroundColor(this.getColor());
 	}
 }

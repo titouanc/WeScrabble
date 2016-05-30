@@ -1,9 +1,12 @@
 package be.ititou.wescrabble;
 
+import java.util.List;
+
 import be.ititou.wescrabble.interfaces.ATWeScrabble;
 import be.ititou.wescrabble.interfaces.WeScrabbleUI;
 import edu.vub.at.IAT;
 import edu.vub.at.android.util.IATAndroid;
+import edu.vub.at.objects.natives.NATText;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -15,9 +18,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.WindowManager;
-import android.widget.GridView;
-import android.widget.TextView;
-import android.widget.Toast;
+import android.widget.*;
 
 
 public class WeScrabble extends Activity implements WeScrabbleUI {
@@ -28,6 +29,7 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 	private IAT iat;
 	private ATWeScrabble aws;
 	private GridView table;
+	private LinearLayout myLetters;
 	
 	public class StartIATTask extends AsyncTask<Void, String, Void> {
 		private ProgressDialog pd;
@@ -65,6 +67,7 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 	
 	private StartIATTask iatRunner;
 	
+	/* == Activity == */
 	@Override
 	protected void onStop(){
 		super.onStop();
@@ -83,6 +86,8 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
         
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_we_scrabble);
+        
+        myLetters = (LinearLayout) findViewById(R.id.myLetters);
     }
 	
 	@Override
@@ -123,6 +128,7 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
         return super.onOptionsItemSelected(item);
     }
 
+    /* == WeScrabbleUI == */
 	@Override
 	public String getMyName() {
 		return myName;
@@ -148,7 +154,7 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 			@Override
 			public void run(){
 				table = (GridView) findViewById(R.id.table);
-		        table.setAdapter(new ScrabbleAdapter(aws, owner));
+		        table.setAdapter(new ScrabbleTableAdapter(aws, owner));
 			}
 		});
 	}
@@ -181,5 +187,24 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 				}
 			}
 		});
+	}
+
+	@Override
+	public void showMyLetters(final List<NATText> letters) {
+		final Context ctx = this;
+		
+		if (myLetters != null){
+			runOnUiThread(new Runnable(){
+				@Override
+				public void run() {
+					myLetters.removeAllViews();
+					for (NATText nat : letters){
+						String l = nat.toString();
+						TextView t = new TextView(ctx);
+						t.setText(l);
+						myLetters.addView(t);
+					}				}
+			});
+		}
 	}
 }

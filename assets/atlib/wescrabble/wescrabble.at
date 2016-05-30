@@ -1,7 +1,6 @@
 import /.at.lang.futures;
 import /.at.lang.totam;
 
-import ~.ambientref;
 import ~.suggestion;
 import ~.letterset;
 
@@ -61,32 +60,36 @@ def makeWeScrabble(UI){
             myTeam := team;
             UI.setTeam(indexOfTeam: myTeam);
             Ts.inject: tuple: [Player, myTeam, myName];
+            injectLetters();
             pickLetters(7);
-        };
-
-        def createTeamsAlphabet(){
-            0.to: 3 do: {|_|
-                shuffle(alphabet).each: {|l|
-                    Ts.inject: tuple: [Letter, TeamA, l];
-                    Ts.inject: tuple: [Letter, TeamB, l];
-                    log("Inject letter", l, "for both teams");
-                }
-            };
         };
 
         /* Pick letters from the bag */
         def pickLetters(n){
-            if: n > 0
+            if: n <= 0
             then: {
+                def list := letters.toList();
+                log(" >>> ! " + list.toString());
+                UI.showMyLetters(list);
+                UI.showMessage("I got the letters " + list.toString());
+            }
+            else: {
                 Ts.when: (tuple: [Letter, myTeam, var: `l]) in: {
                     letters.add(l);
-                    log("Pick letter", l);
-                    pickLetters(n-1);
+                    pickLetters(n - 1);
                 };
-                nil;
             };
         };
 
+        /* Add letters in the bag */
+        def injectLetters(){
+            randomLetters({|l|
+                system.println("Inject " + l);
+                Ts.inject: (tuple: [Letter, myTeam, l]);
+            });
+        };
+
+        /* The local user plays a suggestion */
         def play(sugg){
             {|return|
                 if: hasNoTeam
@@ -106,6 +109,8 @@ def makeWeScrabble(UI){
                 then: {
                     Ts.inject: (tuple: [Word, myTeam, sugg]);
                     letters := newLetters;
+                    UI.showMyLetters(letters.toList());
+                    pickLetters(7 - newLetters.size());
                     return(true);
                 };
                 
@@ -125,7 +130,6 @@ def makeWeScrabble(UI){
                              then: {mySelf.TeamA;}
                              else: {mySelf.TeamB};
                     mySelf.assignTo: t;
-                    mySelf.createTeamsAlphabet();
                     opponnentOf: t;
                 }
                 /* I'm assigned, return the less populated team */
@@ -153,7 +157,7 @@ def makeWeScrabble(UI){
             def addWord(word, row, col, horizontally){
                 mySelf.play(
                     Suggestion.new(
-                        mySelf.myName, word, row, col, horizontally
+                        mySelf.myName, word, row+1, col+1, horizontally
                     )
                 );
             };

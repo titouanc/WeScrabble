@@ -1,5 +1,9 @@
 package be.ititou.wescrabble.interfaces;
 
+import java.util.List;
+
+import edu.vub.at.objects.natives.NATText;
+
 /**
  * What our Ambient Talk application should expect from the UI
  * @author Titouan Christophe
@@ -36,4 +40,10 @@ public interface WeScrabbleUI {
 	 * @param team The joined team
 	 */
 	public void setTeam(int team);
+	
+	/**
+	 * Called by the backend when the letters set has changed
+	 * @param letters The new letters to show
+	 */
+	public void showMyLetters(List<NATText> letters);
 }
