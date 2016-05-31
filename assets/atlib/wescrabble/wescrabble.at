@@ -44,7 +44,7 @@ def makeWeScrabble(UI){
         };
 
         /* Initialize tuplespace */
-        def Ts := makeTupleSpace("be.ititou.wescrabble");
+        def Ts := makeTupleSpace(self);
 
         // Apply incoming suggestions
         Ts.whenever: (tuple: [Word, var: `_, var: `sugg]) read: {
