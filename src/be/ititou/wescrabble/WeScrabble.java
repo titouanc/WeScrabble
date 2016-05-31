@@ -29,7 +29,6 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 	private IAT iat;
 	private ATWeScrabble aws;
 	private GridView table;
-	private LinearLayout myLetters;
 	
 	public class StartIATTask extends AsyncTask<Void, String, Void> {
 		private ProgressDialog pd;
@@ -86,8 +85,6 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
         
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_we_scrabble);
-        
-        myLetters = (LinearLayout) findViewById(R.id.myLetters);
     }
 	
 	@Override
@@ -191,19 +188,26 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 
 	@Override
 	public void showMyLetters(final List<NATText> letters) {
-		final Context ctx = this;
+		/* Convert to text */
+		String text = "";
+		int i = 0;
+		for (NATText nat : letters){
+			if (i > 0){
+				text += ", ";
+			}
+			text += nat.toString().replaceAll("\"", "").toUpperCase();
+			i++;
+		}
 		
+		final String finalText = text;
+		final TextView myLetters = (TextView) findViewById(R.id.myLetters);
 		if (myLetters != null){
 			runOnUiThread(new Runnable(){
 				@Override
 				public void run() {
-					myLetters.removeAllViews();
-					for (NATText nat : letters){
-						String l = nat.toString();
-						TextView t = new TextView(ctx);
-						t.setText(l);
-						myLetters.addView(t);
-					}				}
+					myLetters.setText(finalText);
+					myLetters.invalidate();
+				}
 			});
 		}
 	}

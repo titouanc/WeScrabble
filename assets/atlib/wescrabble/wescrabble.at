@@ -69,9 +69,7 @@ def makeWeScrabble(UI){
             if: n <= 0
             then: {
                 def list := letters.toList();
-                log(" >>> ! " + list.toString());
                 UI.showMyLetters(list);
-                UI.showMessage("I got the letters " + list.toString());
             }
             else: {
                 Ts.when: (tuple: [Letter, myTeam, var: `l]) in: {
@@ -84,7 +82,6 @@ def makeWeScrabble(UI){
         /* Add letters in the bag */
         def injectLetters(){
             randomLetters({|l|
-                system.println("Inject " + l);
                 Ts.inject: (tuple: [Letter, myTeam, l]);
             });
         };
@@ -110,7 +107,7 @@ def makeWeScrabble(UI){
                     Ts.inject: (tuple: [Word, myTeam, sugg]);
                     letters := newLetters;
                     UI.showMyLetters(letters.toList());
-                    pickLetters(7 - newLetters.size());
+                    pickLetters(7 - letters.size());
                     return(true);
                 };
                 

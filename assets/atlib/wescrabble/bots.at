@@ -9,6 +9,7 @@ def makeBot(name, @sugg){
                 system.println(">>> [" + name + "] Set to team " + i + " <<<");
             };
             def showMessage(x){system.println("[" + name + "] " + x)};
+            def showMyLetters(l){showMessage("I have the letters " + l.toString())};
             def setBackend(_){
                 _.addObserver(object:{
                     def update(){
@@ -30,7 +31,6 @@ def makeBot(name, @sugg){
 };
 
 makeBot("Titou", "banana", 3, 3, true);
-
-///.at.support.timer.when: 2.seconds elapsed: {
-//    makeBot("Cluru", "clown", 3, 3, true);
-//};
+//makeBot("Cluru", "clown", 4, 4, true);
+//makeBot("Eli", "fire", 5, 5, true);
+//makeBot("Toon", "castle", 7, 5, true);

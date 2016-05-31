@@ -35,14 +35,26 @@
         android:textAppearance="?android:attr/textAppearanceLarge"
         android:textSize="25sp" />
 
-    <LinearLayout
+    <TextView
+        android:id="@+id/aStaticTextAndGuessWhatIHaveNoIdeaForAnID"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:text="Your letters: "
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:textColor="@android:color/darker_gray"
+        android:textSize="25sp" />
+    
+    <TextView
         android:id="@+id/myLetters"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignBottom="@+id/table"
-        android:layout_centerHorizontal="true"
-        android:orientation="horizontal" >
-
-    </LinearLayout>
+        android:layout_alignParentBottom="true"
+        android:layout_toRightOf="@+id/aStaticTextAndGuessWhatIHaveNoIdeaForAnID"
+        android:text=""
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:textSize="25sp"
+        android:textStyle="bold" />
 
 </RelativeLayout>
