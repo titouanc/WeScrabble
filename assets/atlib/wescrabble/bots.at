@@ -30,6 +30,8 @@ def makeBot(name, @sugg){
     };
 };
 
+network.online;
+
 makeBot("Titou", "banana", 3, 3, true);
 //makeBot("Cluru", "clown", 4, 4, true);
 //makeBot("Eli", "fire", 5, 5, true);

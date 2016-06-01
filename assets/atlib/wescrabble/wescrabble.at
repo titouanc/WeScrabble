@@ -1,8 +1,6 @@
-import /.at.lang.futures;
-import /.at.lang.totam;
-
 import ~.suggestion;
 import ~.letterset;
+import ~.tamtam;
 
 def log(@args){
     system.println(args.join(" "));
@@ -44,22 +42,26 @@ def makeWeScrabble(UI){
         };
 
         /* Initialize tuplespace */
-        def Ts := makeTupleSpace(self);
+        def Ts := TamTam();
 
         // Apply incoming suggestions
-        Ts.whenever: (tuple: [Word, var: `_, var: `sugg]) read: {
+        Ts.observe: (tuple: [Word, var: `_, var: `sugg]) do: {|tup|
+            def sugg := tup.fields[3];
             sugg.applyOn(table);
             UI.showMessage(sugg.repr());
             notifyObservers();
         };
-        Ts.goOnline();
         /**/
 
         def hasNoTeam(){myTeam == nil};
         def assignTo: team {
             myTeam := team;
             UI.setTeam(indexOfTeam: myTeam);
-            Ts.inject: tuple: [Player, myTeam, myName];
+            Ts.accepts: {|tup|
+                /* Only accept letters from my team */
+                (tup.fields[1] != Letter).or: {tup.fields[2] == myTeam}
+            };
+            Ts.put(tuple: [Player, myTeam, myName]);
             injectLetters();
             pickLetters(7);
         };
@@ -72,8 +74,8 @@ def makeWeScrabble(UI){
                 UI.showMyLetters(list);
             }
             else: {
-                Ts.when: (tuple: [Letter, myTeam, var: `l]) in: {
-                    letters.add(l);
+                Ts.take: (tuple: [Letter, myTeam, var: `l]) do: {|tup|
+                    letters.add(tup.fields[3]);
                     pickLetters(n - 1);
                 };
             };
@@ -82,7 +84,7 @@ def makeWeScrabble(UI){
         /* Add letters in the bag */
         def injectLetters(){
             randomLetters({|l|
-                Ts.inject: (tuple: [Letter, myTeam, l]);
+                Ts.put(tuple: [Letter, myTeam, l]);
             });
         };
 
@@ -104,7 +106,7 @@ def makeWeScrabble(UI){
 
                 if: sugg.validOn(table, {|err| UI.showMessage(err)})
                 then: {
-                    Ts.inject: (tuple: [Word, myTeam, sugg]);
+                    Ts.put(tuple: [Word, myTeam, sugg]);
                     letters := newLetters;
                     UI.showMyLetters(letters.toList());
                     pickLetters(7 - letters.size());
