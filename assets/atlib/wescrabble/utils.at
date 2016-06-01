@@ -32,4 +32,10 @@ def due(timeout, aFuture){
 /* Return a closure that always return retval */
 def always: retval {{|@_| retval}};
 
+/* Span closure in a new thread */
+def spawn: closure {
+    def runnable := object: {def run(){closure()}};
+    jlobby.java.lang.Thread.new(runnable).start();
+};
+
 self;

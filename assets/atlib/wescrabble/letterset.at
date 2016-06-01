@@ -1,3 +1,36 @@
+/* We count the number of occurences of each letter in all words from
+ * the dictionary. We obtain their relative frequencies, and a score
+ * which is log(1/frequency).
+ * [letter, frequency, score] */
+def LetterData := [
+    ["a", 0.085044, 2],
+    ["b", 0.021508, 3],
+    ["c", 0.044952, 3],
+    ["d", 0.032954, 3],
+    ["e", 0.116879, 2],
+    ["f", 0.015606, 4],
+    ["g", 0.022762, 3],
+    ["h", 0.026196, 3],
+    ["i", 0.078209, 2],
+    ["j", 0.001826, 6],
+    ["k", 0.010012, 4],
+    ["l", 0.053170, 2],
+    ["m", 0.031179, 3],
+    ["n", 0.068377, 2],
+    ["o", 0.068853, 2],
+    ["p", 0.031546, 3],
+    ["q", 0.002257, 6],
+    ["r", 0.076775, 2],
+    ["s", 0.054334, 2],
+    ["t", 0.072704, 2],
+    ["u", 0.038908, 3],
+    ["v", 0.011523, 4],
+    ["w", 0.011426, 4],
+    ["x", 0.002874, 5],
+    ["y", 0.017123, 4],
+    ["z", 0.003003, 5]
+];
+
 def LetterSet := object: {
     def set;
 
@@ -69,17 +102,27 @@ def LetterSet := object: {
     };
 };
 
-def VOWELS := "aeiouy".explode();
-def CONSONANTS := "bcdfghjklmnpqrstvwxz".explode();
+def pickLetter(p){
+    if: p<0 then: {p := 0};
+    if: p>1 then: {p := 1};
+    
+    {|return|
+        LetterData.each: {|X|
+            def [letter, freq, _] := X;
+            if: p <= freq
+            then: {return(letter)}
+            else: {p := p-freq}
+        };
+    }.escape()
+};
 
-def max(a, b){if: a > b then: {a} else: {b}};
-
-def randomLetters(closure, vowels := 10, consonants := 10){
+def randomLetters(n := 1){
     def R := jlobby.java.util.Random.new();
-    0.to: max(vowels, consonants) do: {|i|
-        if: i<vowels then: {closure(VOWELS[1 + R.nextInt(VOWELS.length)])};
-        if: i<consonants then: {closure(CONSONANTS[1 + R.nextInt(CONSONANTS.length)])};
-    }
+    def res := jlobby.java.util.ArrayList.new();
+    0.to: n do: {|_|
+        res.add(pickLetter(R.nextFloat.doubleValue));
+    };
+    res.toArray();
 };
 
 self;

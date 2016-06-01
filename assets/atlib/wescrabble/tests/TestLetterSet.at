@@ -36,4 +36,9 @@ extend: /.at.unit.test.UnitTest.new("TestLetterSet") with: {
         self.assertTrue((ls("lol") - ls("lol")).positive);
         self.assertFalse((ls("lol") - ls("lolilol")).positive);
     };
+
+    def testRandomPick(){
+        def set := LetterSet.new(randomLetters(10));
+        self.assertEquals(set.size(), 10);
+    };
 };

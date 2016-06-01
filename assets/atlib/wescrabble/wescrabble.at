@@ -2,10 +2,6 @@ import ~.suggestion;
 import ~.letterset;
 import ~.tamtam;
 
-def log(@args){
-    system.println(args.join(" "));
-};
-
 /* Direct P2P communication type */
 deftype AnAwesomeWeScrabble;
 
@@ -13,6 +9,8 @@ deftype AnAwesomeWeScrabble;
 def alphabet := "abcdefghijklmnopqrstubwxyz".explode();
 
 def makeWeScrabble(UI){
+    def log := Logger("WeScrabble");
+
     UI.setAppTitle("We Scrabble /o<");
 
     object: {
@@ -83,9 +81,11 @@ def makeWeScrabble(UI){
 
         /* Add letters in the bag */
         def injectLetters(){
-            randomLetters({|l|
-                Ts.put(tuple: [Letter, myTeam, l]);
-            });
+            spawn: {
+                randomLetters(20).each: {|l|
+                    Ts.put(tuple: [Letter, myTeam, l]);
+                };
+            };
         };
 
         /* The local user plays a suggestion */

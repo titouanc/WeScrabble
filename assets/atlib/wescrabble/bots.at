@@ -1,15 +1,14 @@
 def makeBot(name, @sugg){
     actor: {|name, sugg|
         import /.wescrabble.wescrabble;
+        def log := Logger(name);
 
         def s := makeWeScrabble(object: {
             def getMyName(){name};
             def setAppTitle(@_){};
-            def setTeam(i){
-                system.println(">>> [" + name + "] Set to team " + i + " <<<");
-            };
-            def showMessage(x){system.println("[" + name + "] " + x)};
-            def showMyLetters(l){showMessage("I have the letters " + l.toString())};
+            def setTeam(i){log("Joined team", i)};
+            def showMessage := log;
+            def showMyLetters(l){log("I have the letters:" + l.toString())};
             def setBackend(_){
                 _.addObserver(object:{
                     def update(){

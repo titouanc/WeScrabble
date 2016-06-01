@@ -1,0 +1,20 @@
+import /.wescrabble.tuple;
+
+extend: /.at.unit.test.UnitTest.new("TestTuple") with: {
+    def testTupleMatch(){
+        deftype T;
+        deftype S;
+        def a := tuple: [T, 1];
+        def b := tuple: [T, var: `x];
+        def c := tuple: [S, 1];
+
+        self.assertTrue(a.match(a));
+
+        self.assertTrue(a.match(b));
+        self.assertTrue(b.match(a));
+        self.assertFalse(a.match(c));
+        self.assertFalse(b.match(c));
+        self.assertFalse(c.match(a));
+        self.assertFalse(c.match(b));
+    };
+};

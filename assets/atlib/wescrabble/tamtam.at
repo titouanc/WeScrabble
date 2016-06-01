@@ -7,8 +7,9 @@ import ~.utils;
 def List := jlobby.java.util.LinkedList;
 def Dict := jlobby.java.util.HashMap;
 
-def tuple: args {/.at.lang.totam.tuple: args};
-def var: name {/.at.lang.totam.var: name};
+//def tuple: args {/.at.lang.totam.tuple: args};
+//def var: name {/.at.lang.totam.var: name};
+import ~.tuple;
 deftype TupleSpace;
 
 def remove: tup from: aList {
@@ -76,30 +77,39 @@ def TamTam(typetag := TupleSpace){
         remove: tup from: localDb;
     };
 
+    /* Internal method to take tuples from the tuplespace.
+     * TamTam attemps to take ambient tuples first.
+     */
     def take: aTuple withResolver: res {
-        {|return|
-            /* Local remove */
-            eachLocal: {|tup|
-                if: aTuple.match(tup)
-                then: {
-                    res.resolve(tup);
-                    return(removeLocal(tup));
-                }
-            };
+        /* Find peers who might have the tuple */
+        def remoteCandidates := [];
+        eachAmbient: {|peer,tup|
+            if: aTuple.match(tup)
+            then: {remoteCandidates := remoteCandidates + [[peer, tup]]};
+        };
 
-            /* Find peers who might have the tuple */
-            def remoteCandidates := [];
-            eachAmbient: {|peer,tup|
-                if: aTuple.match(tup)
-                then: {remoteCandidates := remoteCandidates + [[peer, tup]]};
-            };
+        /* Try to remove tuple from the ambient.
+         * If no ambient tuple has been taken, try to take a local tuple.
+         * If no local tuple matches, enqueue the take() and reprocess when
+         * new tuples arrive.
+         */
+        removeAmbient(
+            {|tup| res.resolve(tup)},
+            {|return|
+                /* Local remove */
+                eachLocal: {|tup|
+                    if: aTuple.match(tup)
+                    then: {
+                        res.resolve(tup);
+                        return(removeLocal(tup));
+                    }
+                };
 
-            removeAmbient(
-                {|tup| res.resolve(tup)},
-                {takeWait := takeWait + [[aTuple, res]]},
-                @remoteCandidates
-            );
-        }.escape();
+                /* Enqueue pending take() */
+                takeWait := takeWait + [[aTuple, res]]
+            }.&escape,
+            @remoteCandidates
+        );
     };
 
     /* Attempt to process pending take() call */
@@ -154,7 +164,7 @@ def TamTam(typetag := TupleSpace){
 
         /* Go online ! */
         export: self as: typetag;
-        when: typetag discovered: {|other|
+        whenever: typetag discovered: {|other|
             /* Save ref to other peer for later use */
             peers.add(other);
 
@@ -165,14 +175,15 @@ def TamTam(typetag := TupleSpace){
 
     /* Share a tuple to all connected tuplespaces */
     def share(tup){
-        def it := peers.iterator();
-        while: { it.hasNext() } do: {
-            it.next()<-advertise(remoteIf, tup)@OneWay;
+        spawn: {
+            def it := peers.iterator();
+            while: { it.hasNext() } do: {
+                it.next()<-advertise(remoteIf, tup)@OneWay;
+            };
         };
     };
 
     def removeAmbient(contSuccess, contFail, @pairs){
-        log("Remove ambient " + pairs);
         if: pairs.length == 0
         then: {contFail()}
         else: {
@@ -192,13 +203,16 @@ def TamTam(typetag := TupleSpace){
 
     /* Public interface */
     object: {
-        /* Put a tuple  */
+        /* Put a tuple in the tuplespace */
         def put(tup){
             localDb.add(tup);
             share(tup);
             tupleArrived(tup);
         };
 
+        /* Return all tuples in the tuplespace.
+         * If pattern is not nil, filter only matching tuples
+         */
         def getAll(pattern := nil){
             def res := List.new;
             each: {|tup|
@@ -208,20 +222,28 @@ def TamTam(typetag := TupleSpace){
             res.toArray;
         };
 
+        /* Return a matching tuple from the tuplespace and remove it.
+         * @note: Returns a future tuple
+         */
         def take(aTuple){
             def [fut, res] := makeFuture();
             take: aTuple withResolver: res;
             fut;
         };
 
+        /* Like take() but invoke a callback instead of returning a future */
         def take: aTuple do: closure {
             when: take(aTuple) becomes: closure;
         };
 
+        /* Invoke a callback everytime a matching tuple is inserted
+         * (locally or in the ambient)
+         */
         def observe: aTuple do: closure {
             observers := observers + [[aTuple, closure]];
         };
 
+        /* Set the accepting rule for incoming ambient tuples */
         def accepts: acceptor {
             accept := acceptor;
         };
