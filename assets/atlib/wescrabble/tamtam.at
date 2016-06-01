@@ -199,9 +199,12 @@ def TamTam(typetag := TupleSpace){
             tupleArrived(tup);
         };
 
-        def getAll(){
+        def getAll(pattern := nil){
             def res := List.new;
-            each: {|tup| res.add(tup)};
+            each: {|tup|
+                if: ((pattern == nil).or: {pattern.match(tup)})
+                then: {res.add(tup)};
+            };
             res.toArray;
         };
 
@@ -212,9 +215,7 @@ def TamTam(typetag := TupleSpace){
         };
 
         def take: aTuple do: closure {
-            when: take(aTuple) becomes: {|ret|
-                closure(ret);
-            };
+            when: take(aTuple) becomes: closure;
         };
 
         def observe: aTuple do: closure {

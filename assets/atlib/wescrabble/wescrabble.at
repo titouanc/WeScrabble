@@ -134,7 +134,7 @@ def makeWeScrabble(UI){
                 /* I'm assigned, return the less populated team */
                 else: {
                     def PlayerTuple := tuple: [Player, var: `team, var: `name];
-                    def players := mySelf.Ts.rdg(PlayerTuple);
+                    def players := mySelf.Ts.getAll(PlayerTuple);
                     /* Count nb of players in TeamA - nb of player in TeamB */
                     def nA := players.inject: 0 into: {|res,tup|
                         res + (if: tup.fields[2] == mySelf.TeamA
