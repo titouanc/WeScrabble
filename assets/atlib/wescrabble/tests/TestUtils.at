@@ -1,0 +1,34 @@
+import /.wescrabble.utils;
+
+def log := Logger("TestUtils");
+
+def when: fut becomes: onSuccess catch: onFail finally: onEnd {
+    when: fut
+    becomes: {|ret| onSuccess(ret); onEnd()}
+    catch: {|ret| onFail(ret); onEnd()}
+};
+
+extend: /.at.unit.test.UnitTest.new("TestUtils") with: {
+    def testAsyncDue_timeout(){
+        def [fut, res] := makeFuture();
+
+        when: due(1.seconds, fut)
+        becomes: {|x| self.assertTrue(false)}
+        catch: {|exc| self.assertTrue((reflect: exc).isTaggedAs(DueTimeout))}
+        finally: {res.resolve(true)};
+
+        fut;
+    };
+
+    def testAsyncDue_onTime(){
+        def [fut, res] := makeFuture();
+
+        when: due(1.seconds, fut)
+        becomes: {|x| self.assertEquals(x, 42)}
+        catch: {|exc| self.assertTrue(false)}
+        finally: {res.resolve(true)};
+
+        res.resolve(42);
+        fut;
+    };
+};

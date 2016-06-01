@@ -1,0 +1,38 @@
+def TimerM := /.at.support.timer;
+
+/* A quieter test reporteing module  */
+def makeReporter(){
+    object: {
+        def numSuccess := 0;
+        def numFailed := 0;
+        def numError := 0;
+        def startTime := nil;
+        
+        def init() {
+            numSuccess := 0;
+            numFailed := 0;
+            numError := 0;
+            startTime := nil;
+        };
+        def start(testName, numTests) {
+            startTime := TimerM.now();
+        };
+        def success(methName) {
+            numSuccess := numSuccess + 1;
+        };
+        def failure(methName, assertionFailedExc) {
+            numFailed := numFailed + 1;
+            system.println("Test " + methName + " failed (reason = "+assertionFailedExc.message+")");
+        };
+        def error(methName, exc) {
+            numError := numError + 1;
+            system.println("Error in test " + methName + ": "+exc);
+            system.println(exc.message);
+            system.println(exc.stackTrace);
+        };
+        def stop(testName) {
+            def time := (TimerM.now() - startTime).intValue;
+            system.println("Unit test " + testName + " done. Success: " + numSuccess + " Failed: " + numFailed + " Error: " + numError + " Runtime: "+time+" ms");
+        };
+    };
+};

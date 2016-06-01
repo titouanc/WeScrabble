@@ -1,0 +1,199 @@
+import ~.utils;
+
+def List := jlobby.java.util.LinkedList;
+def Dict := jlobby.java.util.HashMap;
+
+def tuple: args {/.at.lang.totam.tuple: args};
+def var: name {/.at.lang.totam.var: name};
+deftype TupleSpace;
+
+def remove: tup from: aList {
+    def i := 0;
+    def it := aList.iterator();
+    {|return|
+        while: {it.hasNext()} do: {
+            def x := it.next();
+            if: tup.match(x)
+            then: {
+                def removeMeth := aList.&remove; // Grab remove(idx) method
+                removeMeth.cast(jlobby.java.lang.Integer.TYPE)(i);
+                return(true);
+            };
+            i := i+1;
+        };
+        return(false);
+    }.escape();
+};
+
+/* Return an ambient tuple space endpoint
+ * @param accept: a closure (tuple) -> boolean
+ *                determines if an ambient tuple is accepted from a peer
+ * @param typetag: The typetag exported by the ambient tuplespace
+ *                 (no collisions for tests)
+ */
+def TamTam(accept := always: true, typetag := TupleSpace){
+    def log := Logger("TamTam", false);
+    
+    def peers := List.new;     // [remoteRef]: All discovered peers
+    def ambientDb := Dict.new; // {remoteRef: [tuple]}: All tuples sent by peers
+    def localDb := List.new;   // [tuple]: Local tuples
+    def takeWait := [];        // waiting take() call 
+
+    /* Iterate on local tuples */
+    def eachLocal: closure {
+        def it := localDb.iterator();
+        while: { it.hasNext() } do: {closure(it.next())};
+    };
+
+    /* Iterate on ambient tuples */
+    def eachAmbient: closure {
+        def peerIt := ambientDb.keySet().iterator();
+        while: { peerIt.hasNext() } do: {
+            def peer := peerIt.next();
+            def it := ambientDb.get(peer).iterator();
+            while: { it.hasNext() } do: {closure(peer, it.next())};
+        }
+    };
+
+    /* Iterate on all tuples */
+    def each: closure {
+        eachLocal: closure;
+        eachAmbient: {|peer, tup| closure(tup)};
+    };
+
+    /* Remove a local tuple an propagate deletion to other spaces */
+    def removeLocal(tup){
+        def it := peers.iterator();
+        while: { it.hasNext() } do: {
+            it.next()<-removeCopy(self, tup)@OneWay;
+        };
+        remove: tup from: localDb;
+    };
+
+    def take: aTuple withResolver: res {
+        {|return|
+            /* Local remove */
+            eachLocal: {|tup|
+                if: aTuple.match(tup)
+                then: {
+                    res.resolve(tup);
+                    return(removeLocal(tup));
+                }
+            };
+
+            /* Find peers who might have the tuple */
+            def remoteCandidates := [];
+            eachAmbient: {|peer,tup|
+                if: aTuple.match(tup)
+                then: {remoteCandidates := remoteCandidates + [[peer, tup]]};
+            };
+
+            removeAmbient(
+                {|tup| res.resolve(tup)},
+                {takeWait := takeWait + [[aTuple, res]]},
+                @remoteCandidates
+            );
+        }.escape();
+    };
+
+    /* Attempt to process pending take() call */
+    def tupleArrived(){
+        def queue := takeWait;
+        takeWait := [];
+        queue.each: {|x|
+            def [tup, res] := x;
+            take: tup withResolver: res;
+        };
+    };
+
+    def remoteIf := object: {
+        /* Another space advertises one of his tuples */
+        def advertise(owner, tup){
+            if: accept(tup)
+            then: {
+                def known := ambientDb.get(owner);
+                if: known == nil then: {
+                    known := List.new;
+                    ambientDb.put(owner, known);
+                };
+                known.add(tup);
+                tupleArrived();
+            }
+        };
+
+        /* Another space notify that it has deleted one of his tuples */
+        def removeCopy(owner, tup){
+            def db := ambientDb.get(owner);
+            if: db != nil
+            then: {remove: tup from: db};
+        };
+
+        /* Another space wants to remove a tuple owned by me */
+        def remove(tup){
+            log("RemoteIF: remove", tup);
+            log("LocalDb:", localDb);
+            removeLocal(tup);
+        };
+
+        /* Go online ! */
+        export: self as: typetag;
+        when: typetag discovered: {|other|
+            /* Save ref to other peer for later use */
+            peers.add(other);
+
+            /* Send my local database to newly discovered friend */
+            eachLocal: {|tup| other<-advertise(self, tup)@OneWay};
+        };
+    };
+
+    /* Share a tuple to all connected tuplespaces */
+    def share(tup){
+        def it := peers.iterator();
+        while: { it.hasNext() } do: {
+            it.next()<-advertise(remoteIf, tup)@OneWay;
+        };
+    };
+
+    def removeAmbient(contSuccess, contFail, @pairs){
+        log("Remove ambient " + pairs);
+        if: pairs.length == 0
+        then: {contFail()}
+        else: {
+            def [X, @rest] := pairs;
+            def [peer, tup] := X;
+            def removed := peer<-remove(tup)@TwoWay;
+            removed<-ifTrue: {
+                log("Removed", tup, "from", peer);
+                contSuccess(tup);
+            } ifFalse: {
+                log("Removal failed");
+                removeAmbient(contSuccess, contFail, @rest);
+            };
+            remove: tup from: ambientDb.get(peer);
+        }
+    };
+
+    /* Public interface */
+    object: {
+        /* Put a tuple  */
+        def put(tup){
+            localDb.add(tup);
+            share(tup);
+            tupleArrived();
+        };
+
+        def getAll(){
+            def res := List.new;
+            each: {|tup| res.add(tup)};
+            res.toArray;
+        };
+
+        def take(aTuple){
+            def [fut, res] := makeFuture();
+            take: aTuple withResolver: res;
+            fut;
+        };
+    };
+};
+
+self;

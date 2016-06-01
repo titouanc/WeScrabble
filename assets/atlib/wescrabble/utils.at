@@ -1,0 +1,35 @@
+import /.at.lang.futures;
+
+def Logger(name, active := true){
+    def prefix := "[" + name + "]";
+
+    def log(@args){
+        if: active
+        then: {
+            def txt := prefix;
+            args.each: {|x|
+                txt := txt + " " + x;
+            };
+            system.println(txt);
+        }
+    };
+};
+
+/* When a timeout expires for a due future */
+deftype DueTimeout <: /.at.lang.types.Exception;
+
+/* Alternative implementation of @Due */
+def due(timeout, aFuture){
+    def [fut, res] := makeFuture();
+    when: aFuture becomes: {|ret| res.resolve(ret)};
+
+    /.at.support.timer.when: timeout elapsed: {
+        res.ruin(/.at.lang.exceptions.createException(DueTimeout));
+    };
+    fut;
+};
+
+/* Return a closure that always return retval */
+def always: retval {{|@_| retval}};
+
+self;

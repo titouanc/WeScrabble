@@ -1,0 +1,129 @@
+import /.wescrabble.tamtam;
+
+def log := Logger("TestTamTam");
+def helloTemplate := tuple: ["hello"];
+
+extend: /.at.unit.test.UnitTest.new("TestTamTam") with: {
+    /* Test that tuples are propagated in real time */
+    def testAsync_ShareRT(){
+        deftype Test1;
+        actor: {|Test1|
+            import ~.tamtam;
+            def T := TamTam((always: true), Test1);
+            /.at.support.timer.when: 1.seconds elapsed: {
+                T.put(tuple: ["hello"]);
+            };
+        };
+
+        def T := TamTam((always: true), Test1);
+        /.at.support.timer.when: 2.seconds elapsedWithFuture: {
+            def tups := T.getAll();
+            self.assertEquals(tups.length, 1);
+        };
+    };
+
+    /* Test that previously inserted tuples are propagated when a new space connects */
+    def testAsync_ShareAfter(){
+        deftype Test2;
+        actor: {|Test2|
+            import ~.tamtam;
+            def T := TamTam((always: true), Test2);
+            T.put(tuple: ["Hello"]);
+        };
+
+        def [fut, res] := makeFuture();
+        /.at.support.timer.when: 2.seconds elapsed: { // Wait actor to be up && running
+            def T := TamTam((always: true), Test2);
+            /.at.support.timer.when: 1.seconds elapsed: { // Wait for TamTams to discover
+                def tups := T.getAll();
+                res.resolve(self.assertEquals(tups.length, 1));
+            };
+        };
+        fut;
+    };
+
+    /* Test that tuples can be removed from another peer after it has been received */
+    def testAsync_RemoveDirectly(){
+        deftype Test3;
+        actor: {|Test3|
+            import ~.tamtam;
+            def T := TamTam((always: true), Test3);
+            T.put(tuple: ["hello"]);
+            /.at.support.timer.when: 5.seconds elapsed: {
+                /* Ugly test to verify that deletion is propagated */
+                (T.getAll().length == 0).or: {3 / 0};
+            };
+        };
+
+        def [fut, res] := makeFuture();
+        /.at.support.timer.when: 2.seconds elapsed: {
+            def T := TamTam((always: true), Test3);
+            /.at.support.timer.when: 1.seconds elapsed: {
+                when: T.take(helloTemplate) becomes: {|x|
+                    self.assertEquals(T.getAll.length, 0);
+                    res.resolve(42);
+                };
+            };
+        };
+        fut;
+    };
+
+    /* Test that tuples can be removed locally */
+    def testAsync_RemoveLocal(){
+        deftype Test4;
+        def T := TamTam((always: true), Test4);
+        T.put(tuple: ["hello"]);
+        def [fut, res] := makeFuture();
+        when: T.take(helloTemplate) becomes: {|x|
+            self.assertEquals(T.getAll.length, 0);
+            res.resolve(42);
+        };
+        fut;
+    };
+
+    /* Test that tuples can be removed from another peer when  */
+    def testAsync_RemoveAsync(){
+        deftype Test5;
+        actor: {|Test5|
+            import ~.tamtam;
+            def T := TamTam((always: true), Test5);
+            /.at.support.timer.when: 2.seconds elapsed: {
+                T.put(tuple: ["hello"]);
+            };
+        };
+
+        def [fut, res] := makeFuture();
+        def T := TamTam((always: true), Test5);
+        when: T.take(helloTemplate) becomes: {|x|
+            self.assertEquals(T.getAll.length, 0);
+            res.resolve(42);
+        };
+        due(5.seconds, fut);
+    };
+
+    /* Test accepting filter */
+    def testAsync_filterIncoming(){
+        deftype Test6;
+        deftype Red;
+        deftype Blue;
+        actor: {|Test6, Red, Blue|
+            import ~.tamtam;
+            def Morpheus := TamTam((always: true), Test6);
+            Morpheus.put(tuple: [Red, "Exit the matrix"]);
+            Morpheus.put(tuple: [Blue, "Back to dreams"]);
+        };
+
+        def RedPill := tuple: [Red, var: `x];
+
+        def [fut, res] := makeFuture();
+        /.at.support.timer.when: 2.seconds elapsed: { // Wait actor to be up && running
+            def Neo := TamTam(RedPill.&match, Test6);
+
+            /.at.support.timer.when: 1.seconds elapsed: { // Wait for TamTams to discover
+                def tups := Neo.getAll();
+                res.resolve(self.assertEquals(tups.length, 1));
+            };
+        };
+        fut;
+    };
+};
