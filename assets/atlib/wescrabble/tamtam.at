@@ -1,14 +1,18 @@
 /*
- *  A shared tuplespace module.
+ * TamTam is a shared tuplespace module with the following features:
+ * - Shared across devices, acceptance rule for shared tuples.
+ * - Tuplespace operations: out=put, in=take, peek=getAll
+ * - The emitter of a tuple always has authority on his deletion (like totam)
+ * 
+ * TODO:
+ * - mark peers as disconnected, their tuples are temporarily not accessible
+ * - Detects failures with timeouts
  */
-
-import ~.utils;
 
 def List := jlobby.java.util.LinkedList;
 def Dict := jlobby.java.util.HashMap;
 
-//def tuple: args {/.at.lang.totam.tuple: args};
-//def var: name {/.at.lang.totam.var: name};
+import ~.utils;
 import ~.tuple;
 deftype TupleSpace;
 
@@ -31,8 +35,6 @@ def remove: tup from: aList {
 };
 
 /* Return an ambient tuple space endpoint
- * @param accept: a closure (tuple) -> boolean
- *                determines if an ambient tuple is accepted from a peer
  * @param typetag: The typetag exported by the ambient tuplespace
  *                 (no collisions for tests)
  */
@@ -119,7 +121,7 @@ def TamTam(typetag := TupleSpace){
         observers.each: {|x|
             def [pattern, callback] := x;
             if: pattern.match(tup)
-            then: {callback(tup)}
+            then: {spawn: {callback(tup)}}
         };
 
         def queue := takeWait;
@@ -168,8 +170,10 @@ def TamTam(typetag := TupleSpace){
             /* Save ref to other peer for later use */
             peers.add(other);
 
-            /* Send my local database to newly discovered friend */
-            eachLocal: {|tup| other<-advertise(self, tup)@OneWay};
+            spawn: {
+                /* Send my local database to newly discovered friend */
+                eachLocal: {|tup| other<-advertise(self, tup)@OneWay};
+            };
         };
     };
 
@@ -241,6 +245,13 @@ def TamTam(typetag := TupleSpace){
          */
         def observe: aTuple do: closure {
             observers := observers + [[aTuple, closure]];
+        };
+
+        def observeAll: aTuple do: closure {
+            observe: aTuple do: closure;
+            getAll(aTuple).each: {|tup|
+                closure(tup);
+            };
         };
 
         /* Set the accepting rule for incoming ambient tuples */

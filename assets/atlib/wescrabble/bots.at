@@ -25,13 +25,23 @@ def makeBot(name, @sugg){
                     _.addWord(@sugg);
                 }
             };
+            def setPlayerRack(p, r){log(p, "has rack", r)};
         });
     };
 };
 
 network.online;
 
+def T := /.at.support.timer;
+def t := 2.seconds;
+
 makeBot("Titou", "banana", 3, 3, true);
-//makeBot("Cluru", "clown", 4, 4, true);
-//makeBot("Eli", "fire", 5, 5, true);
-//makeBot("Toon", "castle", 7, 5, true);
+T.when: t elapsed: {
+    makeBot("Cluru", "clown", 4, 4, true);
+    T.when: t elapsed: {
+        makeBot("Eli", "fire", 5, 5, true);
+        T.when: t elapsed: {
+            makeBot("Toon", "castle", 7, 5, true);
+        };
+    };
+};

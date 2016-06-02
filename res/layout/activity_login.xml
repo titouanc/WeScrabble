@@ -16,8 +16,8 @@
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="80dp"
         android:background="@android:drawable/btn_default"
-        android:text="Join game"
-        android:onClick="goToGame"/>
+        android:onClick="goToGame"
+        android:text="Join game" />
 
     <TextView
         android:id="@+id/textView2"

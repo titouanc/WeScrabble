@@ -46,4 +46,8 @@ public interface WeScrabbleUI {
 	 * @param letters The new letters to show
 	 */
 	public void showMyLetters(List<NATText> letters);
+	
+	public void setPlayerRack(String playerName, List<NATText> letters);
+	
+	public void removePlayerRack(String playerName);
 }

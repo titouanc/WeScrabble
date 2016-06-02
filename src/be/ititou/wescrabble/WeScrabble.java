@@ -1,6 +1,8 @@
 package be.ititou.wescrabble;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import be.ititou.wescrabble.interfaces.ATWeScrabble;
 import be.ititou.wescrabble.interfaces.WeScrabbleUI;
@@ -17,6 +19,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MenuItem.OnMenuItemClickListener;
 import android.view.WindowManager;
 import android.widget.*;
 
@@ -29,6 +32,7 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 	private IAT iat;
 	private ATWeScrabble aws;
 	private GridView table;
+	private Map<String, String> racks = new HashMap<String, String>();
 	
 	public class StartIATTask extends AsyncTask<Void, String, Void> {
 		private ProgressDialog pd;
@@ -107,22 +111,21 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.we_scrabble, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-        if (id == R.id.action_settings) {
-            return true;
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        menu.clear();
+        menu.add("My team racks...");
+        for (String player : racks.keySet()){
+        	String letters = racks.get(player);
+        	MenuItem item = menu.add(player + ": " + letters);
+        	item.setOnMenuItemClickListener(new OnMenuItemClickListener(){
+				@Override
+				public boolean onMenuItemClick(MenuItem item) {
+					showMessage("Selected " + item.toString());
+					return true;
+				}
+        	});
         }
-        return super.onOptionsItemSelected(item);
+        return super.onPrepareOptionsMenu(menu);
     }
 
     /* == WeScrabbleUI == */
@@ -185,10 +188,8 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 			}
 		});
 	}
-
-	@Override
-	public void showMyLetters(final List<NATText> letters) {
-		/* Convert to text */
+	
+	private static String joinLetters(List<NATText> letters){
 		String text = "";
 		int i = 0;
 		for (NATText nat : letters){
@@ -198,8 +199,12 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 			text += nat.toString().replaceAll("\"", "").toUpperCase();
 			i++;
 		}
-		
-		final String finalText = text;
+		return text;
+	}
+
+	@Override
+	public void showMyLetters(final List<NATText> letters) {
+		final String finalText = joinLetters(letters);
 		final TextView myLetters = (TextView) findViewById(R.id.myLetters);
 		if (myLetters != null){
 			runOnUiThread(new Runnable(){
@@ -209,6 +214,20 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 					myLetters.invalidate();
 				}
 			});
+		}
+	}
+
+	@Override
+	public void setPlayerRack(String playerName, List<NATText> letters) {
+		synchronized (racks) {
+			racks.put(playerName, joinLetters(letters));
+		}
+	}
+
+	@Override
+	public void removePlayerRack(String playerName) {
+		synchronized (racks){
+			racks.remove(playerName);
 		}
 	}
 }

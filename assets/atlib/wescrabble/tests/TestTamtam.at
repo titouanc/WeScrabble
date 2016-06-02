@@ -144,4 +144,25 @@ extend: /.at.unit.test.UnitTest.new("TestTamTam") with: {
         };
         due(5.seconds, fut);
     };
+
+    /* Test callback on stored tuples */
+    def testAsync_observeAll(){
+        deftype Test8;
+        actor: {|Test8|
+            import ~.tamtam;
+            def T := TamTam(Test8);
+            T.put(tuple: ["Hello", "world"]);
+        };
+
+        def helloTuple := tuple: ["Hello", var: `who];
+        def T := TamTam(Test8);
+        
+        def [fut, res] := makeFuture();
+        /.at.support.timer.when: 2.seconds elapsed: {
+            T.observeAll: helloTuple do: {|tup|
+                res.resolve(self.assertEquals(tup.fields[2], "world"));
+            };
+        };
+        due(5.seconds, fut);
+    };
 };

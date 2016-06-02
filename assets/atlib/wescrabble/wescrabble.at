@@ -8,6 +8,12 @@ deftype AnAwesomeWeScrabble;
 /* The whole alphabet */
 def alphabet := "abcdefghijklmnopqrstubwxyz".explode();
 
+/*
+ * STILL TODO:
+ *  - Players of the same team can see and exchange letters from each other
+ *  - 
+ */
+
 def makeWeScrabble(UI){
     def log := Logger("WeScrabble");
 
@@ -27,6 +33,7 @@ def makeWeScrabble(UI){
         deftype Player;
         deftype Letter;
         deftype Word;
+        deftype Rack;
 
         def myTeam := nil;
         def myName := UI.getMyName();
@@ -46,32 +53,48 @@ def makeWeScrabble(UI){
         Ts.observe: (tuple: [Word, var: `_, var: `sugg]) do: {|tup|
             def sugg := tup.fields[3];
             sugg.applyOn(table);
-            UI.showMessage(sugg.repr());
             notifyObservers();
         };
         /**/
 
         def hasNoTeam(){myTeam == nil};
         def assignTo: team {
-            myTeam := team;
-            UI.setTeam(indexOfTeam: myTeam);
-            Ts.accepts: {|tup|
-                /* Only accept letters from my team */
-                (tup.fields[1] != Letter).or: {tup.fields[2] == myTeam}
+            if: hasNoTeam
+            then: {
+                myTeam := team;
+                UI.setTeam(indexOfTeam: myTeam);
+                Ts.accepts: {|tup|
+                    /* Only accept letters from my team */
+                    (tup.fields[1] != Letter).or: {tup.fields[2] == myTeam}
+                };
+                Ts.put(tuple: [Player, myTeam, myName]);
+                injectLetters();
+                pickLetters(7);
+
+                /* Subscrible to Rack updates */
+                def RackTuple := tuple: [Rack, myTeam, var: `player, var: `rack];
+                Ts.observeAll: RackTuple do: {|tup|
+                    if: tup.fields[3] != myName
+                    then: {
+                        def letters := List.new;
+                        tup.fields[4].each: {|l| letters.add(l)};
+                        UI.setPlayerRack(tup.fields[3], letters);
+                    };
+                };
             };
-            Ts.put(tuple: [Player, myTeam, myName]);
-            injectLetters();
-            pickLetters(7);
         };
 
         /* Pick letters from the bag */
         def pickLetters(n){
             if: n <= 0
             then: {
+                /* No more letter to pick, notify GUI and team of my new rack */
                 def list := letters.toList();
+                Ts.put(tuple: [Rack, myTeam, myName, letters.toList.toArray]);
                 UI.showMyLetters(list);
             }
             else: {
+                /* Pick a letter, then pick n-1 letters */
                 Ts.take: (tuple: [Letter, myTeam, var: `l]) do: {|tup|
                     letters.add(tup.fields[3]);
                     pickLetters(n - 1);
@@ -80,9 +103,9 @@ def makeWeScrabble(UI){
         };
 
         /* Add letters in the bag */
-        def injectLetters(){
+        def injectLetters(n := 20){
             spawn: {
-                randomLetters(20).each: {|l|
+                randomLetters(n).each: {|l|
                     Ts.put(tuple: [Letter, myTeam, l]);
                 };
             };
