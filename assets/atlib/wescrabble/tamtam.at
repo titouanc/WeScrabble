@@ -19,7 +19,7 @@ deftype TupleSpace;
 /* Timeout for remote calls.
 * A peer is considered offline if it overrun this timeout.
 * Might be enhanced with dynamic evaluation ? */
-def DISCONNECT_TIMEOUT := 5.seconds;
+def DISCONNECT_TIMEOUT := 10.seconds;
 
 def remove: tup from: aList {
     def i := 0;
@@ -67,7 +67,7 @@ def TamTam(typetag := TupleSpace){
         then: {
             when: due(DISCONNECT_TIMEOUT, peer <+ msg)
             becomes: closure
-            catch: DueTimeout using: {online.put(peer, false)};
+            catch: DueTimeout using: {|exc| online.put(peer, false)};
         };
     };
 
