@@ -16,15 +16,20 @@ import ~.utils;
 import ~.tuple;
 deftype TupleSpace;
 
+/* Timeout for remote calls.
+* A peer is considered offline if it overrun this timeout.
+* Might be enhanced with dynamic evaluation ? */
+def DISCONNECT_TIMEOUT := 5.seconds;
+
 def remove: tup from: aList {
     def i := 0;
+    def removeMeth := aList.&remove; // Grab remove(idx) method
     def it := aList.iterator();
     {|return|
         while: {it.hasNext()} do: {
             def x := it.next();
             if: tup.match(x)
             then: {
-                def removeMeth := aList.&remove; // Grab remove(idx) method
                 removeMeth.cast(jlobby.java.lang.Integer.TYPE)(i);
                 return(true);
             };
@@ -44,9 +49,27 @@ def TamTam(typetag := TupleSpace){
     
     def peers := List.new;     // [remoteRef]: All discovered peers
     def ambientDb := Dict.new; // {remoteRef: [tuple]}: All tuples sent by peers
+    def online := Dict.new;    // {remoteRef: true/false}: is the player online
     def localDb := List.new;   // [tuple]: Local tuples
     def takeWait := [];        // waiting take() call 
     def observers := [];       // Registered observe calls
+
+    def isOnline(peer){
+        def x := online.get(peer);
+        (x != nil).and: {x};
+    };
+
+    /* Like when:becomes: but mark peer as disconnected on timeout.
+     * Note that closure might be not executed
+     *  (if the peer is not online at the moment) */
+    def when: msg from: peer becomes: closure {
+        if: isOnline(peer)
+        then: {
+            when: due(DISCONNECT_TIMEOUT, peer <+ msg)
+            becomes: closure
+            catch: DueTimeout using: {online.put(peer, false)};
+        };
+    };
 
     /* Iterate on local tuples */
     def eachLocal: closure {
@@ -59,8 +82,12 @@ def TamTam(typetag := TupleSpace){
         def peerIt := ambientDb.keySet().iterator();
         while: { peerIt.hasNext() } do: {
             def peer := peerIt.next();
-            def it := ambientDb.get(peer).iterator();
-            while: { it.hasNext() } do: {closure(peer, it.next())};
+
+            if: isOnline(peer)
+            then: {
+                def it := ambientDb.get(peer).iterator();
+                while: { it.hasNext() } do: {closure(peer, it.next())};
+            };
         }
     };
 
@@ -90,28 +117,28 @@ def TamTam(typetag := TupleSpace){
             then: {remoteCandidates := remoteCandidates + [[peer, tup]]};
         };
 
-        /* Try to remove tuple from the ambient.
-         * If no ambient tuple has been taken, try to take a local tuple.
-         * If no local tuple matches, enqueue the take() and reprocess when
+        /* Try to remove local tuple.
+         * If no local tuple has been taken, try to take an ambient tuple.
+         * If no ambient tuple matches, enqueue the take() and reprocess when
          * new tuples arrive.
          */
-        removeAmbient(
-            {|tup| res.resolve(tup)},
-            {|return|
-                /* Local remove */
-                eachLocal: {|tup|
-                    if: aTuple.match(tup)
-                    then: {
-                        res.resolve(tup);
-                        return(removeLocal(tup));
-                    }
-                };
+        {|return|
+            /* Local remove */
+            eachLocal: {|tup|
+                if: aTuple.match(tup)
+                then: {
+                    res.resolve(tup);
+                    return(removeLocal(tup));
+                }
+            };
 
-                /* Enqueue pending take() */
-                takeWait := takeWait + [[aTuple, res]]
-            }.&escape,
-            @remoteCandidates
-        );
+            removeAmbient(
+                {|tup| res.resolve(tup)},
+                {|@_| /* Enqueue pending take() */
+                      takeWait := takeWait + [[aTuple, res]]},
+                @remoteCandidates
+            );
+        }.escape();
     };
 
     /* Attempt to process pending take() call */
@@ -135,6 +162,7 @@ def TamTam(typetag := TupleSpace){
     def remoteIf := object: {
         /* Another space advertises one of his tuples */
         def advertise(owner, tup){
+            online.put(owner, true);
             if: accept(tup)
             then: {
                 def known := ambientDb.get(owner);
@@ -169,11 +197,15 @@ def TamTam(typetag := TupleSpace){
         whenever: typetag discovered: {|other|
             /* Save ref to other peer for later use */
             peers.add(other);
+            online.put(other, true);
 
             spawn: {
                 /* Send my local database to newly discovered friend */
                 eachLocal: {|tup| other<-advertise(self, tup)@OneWay};
             };
+
+            when: other disconnected: {online.put(other, false)};
+            when: other reconnected: {online.put(other, true)};
         };
     };
 
@@ -182,7 +214,9 @@ def TamTam(typetag := TupleSpace){
         spawn: {
             def it := peers.iterator();
             while: { it.hasNext() } do: {
-                it.next()<-advertise(remoteIf, tup)@OneWay;
+                def peer := it.next();
+                when: <-advertise(remoteIf, tup)@TwoWay
+                from: peer becomes: {|@_|};
             };
         };
     };
@@ -193,13 +227,16 @@ def TamTam(typetag := TupleSpace){
         else: {
             def [X, @rest] := pairs;
             def [peer, tup] := X;
-            def removed := peer<-remove(tup)@TwoWay;
-            removed<-ifTrue: {
-                log("Removed", tup, "from", peer);
-                contSuccess(tup);
-            } ifFalse: {
-                log("Removal failed");
-                removeAmbient(contSuccess, contFail, @rest);
+            when: <-remove(tup)@TwoWay
+            from: peer
+            becomes: {|removed|
+                removed.ifTrue: {
+                    log("Removed", tup, "from", peer);
+                    contSuccess(tup);
+                } ifFalse: {
+                    log("Removal failed");
+                    removeAmbient(contSuccess, contFail, @rest);
+                };
             };
             remove: tup from: ambientDb.get(peer);
         }

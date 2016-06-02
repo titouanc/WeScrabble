@@ -103,7 +103,7 @@ def makeWeScrabble(UI){
         };
 
         /* Add letters in the bag */
-        def injectLetters(n := 20){
+        def injectLetters(n := 15){
             spawn: {
                 randomLetters(n).each: {|l|
                     Ts.put(tuple: [Letter, myTeam, l]);
