@@ -63,12 +63,9 @@ def TamTam(typetag := TupleSpace){
      * Note that closure might be not executed
      *  (if the peer is not online at the moment) */
     def when: msg from: peer becomes: closure {
-        if: isOnline(peer)
-        then: {
-            when: due(DISCONNECT_TIMEOUT, peer <+ msg)
-            becomes: closure
-            catch: DueTimeout using: {|exc| online.put(peer, false)};
-        };
+        when: due(DISCONNECT_TIMEOUT, peer <+ msg)
+        becomes: closure
+        catch: DueTimeout using: {|exc| online.put(peer, false)};
     };
 
     /* Iterate on local tuples */
@@ -148,7 +145,7 @@ def TamTam(typetag := TupleSpace){
         observers.each: {|x|
             def [pattern, callback] := x;
             if: pattern.match(tup)
-            then: {spawn: {callback(tup)}}
+            then: {callback(tup)}
         };
 
         def queue := takeWait;
@@ -162,6 +159,10 @@ def TamTam(typetag := TupleSpace){
     def remoteIf := object: {
         /* Another space advertises one of his tuples */
         def advertise(owner, tup){
+            /* Peer is back online, send my whole database */
+            if: isOnline(owner).not
+            then: {other<-advertiseAll(self, @(localDb.toArray))@OneWay};
+            
             online.put(owner, true);
             if: accept(tup)
             then: {
@@ -173,6 +174,20 @@ def TamTam(typetag := TupleSpace){
                 known.add(tup);
                 tupleArrived(tup);
             }
+        };
+
+        /* Another space advertises its whole database */
+        def advertiseAll(owner, @tups){
+            online.put(owner, true);
+            def res := List.new;
+            tups.each: {|t|
+                if: accept(t)
+                then: {
+                    res.add(t);
+                    tupleArrived(t);
+                };
+            };
+            ambientDb.put(owner, res);
         };
 
         /* Another space notify that it has deleted one of his tuples */
@@ -198,26 +213,22 @@ def TamTam(typetag := TupleSpace){
             /* Save ref to other peer for later use */
             peers.add(other);
             online.put(other, true);
-
-            spawn: {
-                /* Send my local database to newly discovered friend */
-                eachLocal: {|tup| other<-advertise(self, tup)@OneWay};
-            };
-
             when: other disconnected: {online.put(other, false)};
-            when: other reconnected: {online.put(other, true)};
+            when: other reconnected: {
+                online.put(other, true);
+                other<-advertiseAll(self, @(localDb.toArray))@OneWay;
+            };
+            other<-advertiseAll(self, @(localDb.toArray))@OneWay;
         };
     };
 
     /* Share a tuple to all connected tuplespaces */
     def share(tup){
-        spawn: {
-            def it := peers.iterator();
-            while: { it.hasNext() } do: {
-                def peer := it.next();
-                when: <-advertise(remoteIf, tup)@TwoWay
-                from: peer becomes: {|@_|};
-            };
+        def it := peers.iterator();
+        while: { it.hasNext() } do: {
+            def peer := it.next();
+            when: <-advertise(remoteIf, tup)@TwoWay
+            from: peer becomes: {|@_|};
         };
     };
 
