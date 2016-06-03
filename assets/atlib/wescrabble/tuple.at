@@ -37,6 +37,24 @@ def Tuple := isolate: {
 };
 
 def publicAPI := object: {
+    def remove: tup from: aList {
+        def i := 0;
+        def removeMeth := aList.&remove; // Grab remove(idx) method
+        def it := aList.iterator();
+        {|return|
+            while: {it.hasNext()} do: {
+                def x := it.next();
+                if: tup.match(x)
+                then: {
+                    removeMeth.cast(jlobby.java.lang.Integer.TYPE)(i);
+                    return(true);
+                };
+                i := i+1;
+            };
+            return(false);
+        }.escape();
+    };
+    
     def tuple: contents {
         Tuple.new(contents);
     };

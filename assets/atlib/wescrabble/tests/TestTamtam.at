@@ -113,9 +113,8 @@ extend: /.at.unit.test.UnitTest.new("TestTamTam") with: {
             Morpheus.put(tuple: [Blue, "Back to dreams"]);
         };
 
-        def RedPill := tuple: [Red, var: `x];
         def Neo := TamTam(Test6);
-        Neo.accepts: RedPill.&match;
+        Neo.accepts: isolate: {|Red| def accept(t){t[1] == Red}};
 
         /.at.support.timer.when: 2.seconds elapsedWithFuture: { // Wait actor to be up && running
             def tups := Neo.getAll();
