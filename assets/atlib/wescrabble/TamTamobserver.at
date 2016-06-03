@@ -1,0 +1,23 @@
+network.online;
+
+actor: {
+    deftype Letter;
+    deftype Word;
+    deftype AnAwesomeWeScrabble;
+
+    import ~.tuple;
+
+    def Ts := ~.tamtam.TamTam(AnAwesomeWeScrabble);
+
+    //Ts.observeAll: (tuple: [Letter, var: `x, var: `y]) do: {|tup|
+    //    system.println(tup.fields);
+    //};
+
+    //Ts.observeAll: (tuple: [Letter, var: `x, var: `y, var: `z]) do: {|tup|
+    //    system.println(tup.fields);
+    //};
+
+    //Ts.observeAll: (tuple: [Word, var: `y, var: `z]) do: {|tup|
+    //    system.println(tup.fields);
+    //};
+};

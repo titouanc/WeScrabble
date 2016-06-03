@@ -16,6 +16,9 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -27,12 +30,29 @@ import android.widget.*;
 public class WeScrabble extends Activity implements WeScrabbleUI {
 	private static final int _ASSET_INSTALLER_ = 0;
 	private static final String AT_LAUNCHER = "import /.wescrabble.wescrabble.start();";
+	public static final int _ADD_WORD_ = 42;
+	public static final int _SWAP_LETTER_ = 131;
 	
 	private String myName;
+	private int myTeam;
 	private IAT iat;
 	private ATWeScrabble aws;
 	private GridView table;
 	private Map<String, String> racks = new HashMap<String, String>();
+	private LooperThread lt;
+	
+	public static class Suggestion {
+		public String word;
+		public int col, row;
+		public boolean horizontally;
+		
+		public Suggestion(String a, int b, int c, boolean d){
+			word = a;
+			row = b;
+			col = c;
+			horizontally = d;
+		}
+	}
 	
 	public class StartIATTask extends AsyncTask<Void, String, Void> {
 		private ProgressDialog pd;
@@ -68,14 +88,40 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 		}
 	}
 	
+	class LooperThread extends Thread {
+		public Handler mHandler = new Handler() {
+			public void handleMessage(Message msg) {
+				if (aws == null)
+					return;
+				switch (msg.what){
+				case _ADD_WORD_:
+					Suggestion s = (Suggestion) msg.obj;
+					aws.addWord(s.word, s.row, s.col, s.horizontally);
+					break;
+				case _SWAP_LETTER_:
+					String args[] = (String[]) msg.obj;
+					break;
+				}
+			}
+		};
+
+		public void run() {
+			Looper.prepare();
+			Looper.loop();
+		}
+	}
+	
 	private StartIATTask iatRunner;
 	
 	/* == Activity == */
 	@Override
 	protected void onStop(){
 		super.onStop();
-		if (iatRunner != null){
-			iatRunner.cancel(true);
+//		if (iatRunner != null){
+//			iatRunner.cancel(true);
+//		}
+		if (iat != null){
+			iat.evalAndPrint("system.exit()");
 		}
 	}
 
@@ -96,7 +142,22 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 		super.onStart();
 		Intent intent = getIntent();
 		myName = intent.getStringExtra("myName");
+		myTeam = intent.getIntExtra("myTeam", 0);
 		this.setContentView(R.layout.activity_we_scrabble);
+		TextView text = (TextView) findViewById(R.id.teamLabel);
+		switch (myTeam){
+			case WeScrabbleUI.TeamA:
+				text.setText("Team A");
+				text.setTextColor(Color.RED);
+				break;
+			case WeScrabbleUI.TeamB:
+				text.setText("Team B");
+				text.setTextColor(Color.BLUE);
+				break;
+		}
+
+		lt = new LooperThread();
+		lt.start();
 	}
 	
 	@Override
@@ -112,26 +173,42 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        menu.clear();
-        menu.add("My team racks...");
-        for (String player : racks.keySet()){
-        	String letters = racks.get(player);
-        	MenuItem item = menu.add(player + ": " + letters);
-        	item.setOnMenuItemClickListener(new OnMenuItemClickListener(){
-				@Override
-				public boolean onMenuItemClick(MenuItem item) {
-					showMessage("Selected " + item.toString());
-					return true;
-				}
-        	});
-        }
+    	synchronized (racks){
+    		menu.clear();
+	        menu.add("My team racks...");
+	        
+	        for (final String player : racks.keySet()){
+	        	String letters = racks.get(player);
+	        	MenuItem item = menu.add(player + ": " + letters);
+	        	item.setOnMenuItemClickListener(new OnMenuItemClickListener(){
+					@Override
+					public boolean onMenuItemClick(MenuItem item) {
+						showMessage("Selected " + player);
+						return true;
+					}
+	        	});
+	        }
+    	}
         return super.onPrepareOptionsMenu(menu);
+    }
+    
+    public Handler getHandler(){
+    	return lt.mHandler;
+    }
+    
+    public ATWeScrabble getBackend(){
+    	return aws;
     }
 
     /* == WeScrabbleUI == */
 	@Override
 	public String getMyName() {
 		return myName;
+	}
+	
+	@Override
+	public int getMyTeam(){
+		return myTeam;
 	}
 
 	@Override
@@ -149,12 +226,12 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 	@Override
 	public void setBackend(ATWeScrabble backend){
 		aws = backend;
-		final Activity owner = this;
+		final WeScrabble me = this;
 		runOnUiThread(new Runnable(){
 			@Override
 			public void run(){
 				table = (GridView) findViewById(R.id.table);
-		        table.setAdapter(new ScrabbleTableAdapter(aws, owner));
+		        table.setAdapter(new ScrabbleTableAdapter(me));
 			}
 		});
 	}
@@ -174,17 +251,7 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 		runOnUiThread(new Runnable(){
 			@Override
 			public void run(){
-				TextView text = (TextView) findViewById(R.id.teamLabel);
-				switch (team){
-				case WeScrabbleUI.TeamA:
-					text.setText("Team A");
-					text.setTextColor(Color.RED);
-					break;
-				case WeScrabbleUI.TeamB:
-					text.setText("Team B");
-					text.setTextColor(Color.BLUE);
-					break;
-				}
+				
 			}
 		});
 	}

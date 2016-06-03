@@ -19,7 +19,7 @@ def makeWeScrabble(UI){
 
     UI.setAppTitle("We Scrabble /o<");
 
-    object: {
+    def TheAwesomeWeScrabble := object: {
         def mySelf := self;
         def table := (1***15).map: {|_| (1***15).map: {|__| Suggestion.EMPTY}};
         def observers := jlobby.java.util.LinkedList.new();
@@ -29,13 +29,13 @@ def makeWeScrabble(UI){
         deftype TeamB;
         def opponnentOf: team {if: team == TeamB then: {TeamA} else: {TeamB}};
         def indexOfTeam: team {if: team == TeamA then: {0} else: {1}};
+        def teamOfIndex: idx {if: idx == 0 then: {TeamA} else: {TeamB}};
 
         deftype Player;
         deftype Letter;
         deftype Word;
-        deftype Rack;
 
-        def myTeam := nil;
+        def myTeam := teamOfIndex: UI.getMyTeam();
         def myName := UI.getMyName();
 
         def notifyObservers(){
@@ -47,126 +47,111 @@ def makeWeScrabble(UI){
         };
 
         /* Initialize tuplespace */
-        def Ts := TamTam();
+        def Ts := TamTam(AnAwesomeWeScrabble, {|tup|
+            (tup[1] == Word).or: {tup[2] == myTeam}
+        });
 
-        // Apply incoming suggestions
-        Ts.observe: (tuple: [Word, var: `_, var: `sugg]) do: {|tup|
-            def sugg := tup.fields[3];
+        Ts.put(tuple: [Player, myTeam, myName]);
+
+        /* Add 15 letters to my team */
+        randomLetters(15).each: {|l|
+            Ts.put(tuple: [Letter, myTeam, l]);
+        };
+
+        /* Observe joins */
+        Ts.observe: (tuple: [Player, myTeam, var: `name]) do: {|tup|
+            UI.showMessage(tup[3] + " joins your team !");
+        };
+
+        Ts.observeAll: (tuple: [Letter, myTeam, var: `player, var: ` l]) do: {|tup|
+            def player := tup[3];
+            if: player != myName
+            then: {
+                def res := List.new;
+                Ts.getAll(tuple: [Letter, myTeam, player, var: `l]).each: {|tup|
+                    res.add(tup[4]);
+                };
+                UI.setPlayerRack(player, res);
+            }
+        };
+
+        Ts.observeAll: (tuple: [Word, var: `_, var: `sugg]) do: {|tup|
+            def sugg := Suggestion.new(@(tup[3]));
             sugg.applyOn(table);
             notifyObservers();
         };
         /**/
 
-        def hasNoTeam(){myTeam == nil};
-        def assignTo: team {
-            if: hasNoTeam
-            then: {
-                myTeam := team;
-                UI.setTeam(indexOfTeam: myTeam);
-                Ts.accepts: {|tup|
-                    /* Only accept letters from my team */
-                    (tup.fields[1] != Letter).or: {tup.fields[2] == myTeam}
-                };
-                Ts.put(tuple: [Player, myTeam, myName]);
-                injectLetters();
-                pickLetters(7);
-
-                /* Subscrible to Rack updates */
-                def RackTuple := tuple: [Rack, myTeam, var: `player, var: `rack];
-                Ts.observeAll: RackTuple do: {|tup|
-                    if: tup.fields[3] != myName
-                    then: {
-                        def letters := List.new;
-                        tup.fields[4].each: {|l| letters.add(l)};
-                        UI.setPlayerRack(tup.fields[3], letters);
-                    };
-                };
-            };
-        };
-
         /* Pick letters from the bag */
-        def pickLetters(n){
-            if: n <= 0
+        def pickLetters(){
+            if: letters.size() < 7
             then: {
-                /* No more letter to pick, notify GUI and team of my new rack */
-                def list := letters.toList();
-                Ts.put(tuple: [Rack, myTeam, myName, letters.toList.toArray]);
-                UI.showMyLetters(list);
-            }
-            else: {
                 /* Pick a letter, then pick n-1 letters */
                 Ts.take: (tuple: [Letter, myTeam, var: `l]) do: {|tup|
-                    letters.add(tup.fields[3]);
-                    pickLetters(n - 1);
+                    Ts.put(tuple: [Letter, myTeam, myName, tup[3]]);
+                    letters.add(tup[3]);
+                    UI.showMyLetters(letters.toList());
+                    pickLetters();
                 };
             };
         };
 
-        /* Add letters in the bag */
-        def injectLetters(n := 15){
-            randomLetters(n).each: {|l|
-                Ts.put(tuple: [Letter, myTeam, l]);
+        def applyBonuses(sugg){
+            def bonus := 0;
+            /* Special cells */
+            sugg.each: {|let, row, col|
+                // Red cell: Add 5 random letters to the opponent
+                if: ((row == 8).and: {col == 8})
+                then: {
+                    randomLetters(5).each: {|l|
+                        Ts.put(tuple: [Letter, (opponnentOf: myTeam), l]);
+                        bonus := bonus + 1;
+                    };
+                }
+                else: {
+                    // Blue cell: create the same letter for the opponent team
+                    if: ((row == col).or: {row == 16-col})
+                    then: {
+                        Ts.put(tuple: [Letter, (opponnentOf: myTeam), let]);
+                        bonus := bonus + 1;
+                    }
+                }
+            };
+
+            if: bonus > 0
+            then: {
+                UI.showMessage("You drop " + bonus + " letters to the opponents");
             };
         };
 
         /* The local user plays a suggestion */
         def play(sugg){
             {|return|
-                if: hasNoTeam
-                then: {
-                    UI.showMessage("You are not in any team !");
-                    return(false);
-                };
-
                 def newLetters := letters - LetterSet.new(sugg.requiredLetters(table));
                 if: newLetters.positive.not
                 then: {
-                    UI.showMessage("You don't have all required letters (" + letters.toList.toString + ")");
+                    UI.showMessage("You don't have all required letters");
                     return(false);
                 };
 
                 if: sugg.validOn(table, {|err| UI.showMessage(err)})
                 then: {
-                    Ts.put(tuple: [Word, myTeam, sugg]);
+                    /* Remove letter from my rack */
+                    sugg.requiredLetters(table).each: {|l|
+                        Ts.take(tuple: [Letter, myTeam, myName, l]);
+                    };
+
+                    /* And add suggestion */
+                    Ts.put(tuple: [Word, myTeam, sugg.toArray]);
                     letters := newLetters;
                     UI.showMyLetters(letters.toList());
-                    pickLetters(7 - letters.size());
+                    pickLetters();
+                    spawn: {applyBonuses(sugg)};
                     return(true);
                 };
                 
                 false;
             }.escape()
-        };
-
-        def remoteInterface := object: {
-            def getName(){myName};
-
-            /* Someone joined the game and requests a team */
-            def getTeamAssignation(otherName){
-                if: mySelf.hasNoTeam
-                /* None of us is assigned: assign teams based on name order */
-                then: {
-                    def t := if: (myName <=> otherName) > 0
-                             then: {mySelf.TeamA;}
-                             else: {mySelf.TeamB};
-                    mySelf.assignTo: t;
-                    opponnentOf: t;
-                }
-                /* I'm assigned, return the less populated team */
-                else: {
-                    def PlayerTuple := tuple: [Player, var: `team, var: `name];
-                    def players := mySelf.Ts.getAll(PlayerTuple);
-                    /* Count nb of players in TeamA - nb of player in TeamB */
-                    def nA := players.inject: 0 into: {|res,tup|
-                        res + (if: tup.fields[2] == mySelf.TeamA
-                               then: {1}
-                               else: {-1});
-                    };
-                    if: nA < 0
-                    then: {mySelf.TeamA}
-                    else: {mySelf.TeamB}
-                }
-            };
         };
 
         def localInterface := object: {
@@ -191,17 +176,11 @@ def makeWeScrabble(UI){
             UI.setBackend(self);
         };
 
-        export: remoteInterface as: AnAwesomeWeScrabble;
-        when: AnAwesomeWeScrabble discovered: {|other|
-            when: other<-getName()@TwoWay becomes: {|name|
-                UI.showMessage("Discovered new player " + name);
-                when: other<-getTeamAssignation(myName)@TwoWay becomes: {|team|
-                    if: mySelf.hasNoTeam
-                    then: {mySelf.assignTo: team;}
-                };
-            };
-        };
+        /* Finally start everything */
+        pickLetters();
     };
+
+    TheAwesomeWeScrabble.localInterface;
 };
 
 def start(){

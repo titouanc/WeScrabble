@@ -2,11 +2,14 @@ package be.ititou.wescrabble.ui;
 
 import be.ititou.wescrabble.interfaces.ATWeScrabble;
 import be.ititou.wescrabble.R;
+import be.ititou.wescrabble.WeScrabble;
 import android.app.Dialog;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.AsyncTask;
+import android.os.Handler;
+import android.os.Message;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.EditText;
@@ -14,31 +17,13 @@ import android.widget.TextView;
 
 public class ScrabbleCell extends TextView {
 	private int x, y;
-	private ATWeScrabble ws;
-	
-	/**
-	 * Add a word in an asynchronous task!
-	 */
-	private class AddWordTask extends AsyncTask<Void, Void, Void> {
-		private String word;
-		private Boolean horizontally;
+	private WeScrabble ws;
 		
-		public AddWordTask(String word, Boolean horizontally){
-			super();
-			this.word = word;
-			this.horizontally = horizontally;
-		}
-		
-		@Override
-		protected Void doInBackground(Void... arg0) {
-			ws.addWord(word, y, x, horizontally);
-			return null;
-		}
-	}
-	
 	private class AddWordDialog extends Dialog {
 		void addWord(String word, Boolean horizontally){
-			new AddWordTask(word, horizontally).execute((Void) null);
+			WeScrabble.Suggestion sugg = new WeScrabble.Suggestion(word, y, x, horizontally);
+			Handler h = ws.getHandler();
+			h.sendMessage(Message.obtain(h, WeScrabble._ADD_WORD_, sugg));
 		}
 		
 		private class OnClickListener implements View.OnClickListener {
@@ -47,7 +32,7 @@ public class ScrabbleCell extends TextView {
 				int id = v.getId();
 				
 				switch (id){
-				case R.id.confirmHorizontalButton:
+				case R.id.RedTeam:
 					addWord(getWord(), true);
 					break;
 				case R.id.confirmVerticalButton:
@@ -65,7 +50,7 @@ public class ScrabbleCell extends TextView {
 			setContentView(R.layout.dialog_add_word);
 			
 			OnClickListener listener = new OnClickListener();
-			findViewById(R.id.confirmHorizontalButton).setOnClickListener(listener);
+			findViewById(R.id.RedTeam).setOnClickListener(listener);
 			findViewById(R.id.confirmVerticalButton).setOnClickListener(listener);
 			findViewById(R.id.cancelButton).setOnClickListener(listener);
 		}
@@ -76,7 +61,7 @@ public class ScrabbleCell extends TextView {
 		}
 	}
 	
-	public ScrabbleCell(Context context, ATWeScrabble backend, int row, int col) {
+	public ScrabbleCell(Context context, WeScrabble backend, int row, int col) {
 		super(context);
 		x = col;
 		y = row;
@@ -94,13 +79,9 @@ public class ScrabbleCell extends TextView {
 	}
 	
 	private int getColor(){
-		// Medians
-		if (x == 7 || y == 7) {
-			// Center
-			if (x == y){
-				return Color.rgb(0xff, 0x7e, 0x7e);
-			}
-			return Color.rgb(0xc5, 0xf6, 0x9e);
+		// Center
+		if (x == 7 && y == 7) {
+			return Color.rgb(0xff, 0x7e, 0x7e);
 		}
 		// Diagonals
 		if (x == y || x == 14-y){
@@ -110,7 +91,7 @@ public class ScrabbleCell extends TextView {
 	}
 	
 	public void update(){
-		setText(ws.getLetterAt(y, x).toUpperCase());
+		setText(ws.getBackend().getLetterAt(y, x).toUpperCase());
 		setBackgroundColor(this.getColor());
 	}
 }

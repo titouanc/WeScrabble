@@ -43,9 +43,8 @@ def remove: tup from: aList {
  * @param typetag: The typetag exported by the ambient tuplespace
  *                 (no collisions for tests)
  */
-def TamTam(typetag := TupleSpace){
-    def log := Logger("TamTam", false);
-    def accept := always: true;
+def TamTam(typetag := TupleSpace, accept := always: true){
+    def log := Logger("TamTam", true);
     
     def peers := List.new;     // [remoteRef]: All discovered peers
     def ambientDb := Dict.new; // {remoteRef: [tuple]}: All tuples sent by peers
@@ -65,7 +64,10 @@ def TamTam(typetag := TupleSpace){
     def when: msg from: peer becomes: closure {
         when: due(DISCONNECT_TIMEOUT, peer <+ msg)
         becomes: closure
-        catch: DueTimeout using: {|exc| online.put(peer, false)};
+        catch: DueTimeout using: {|exc|
+            online.put(peer, false);
+            log(peer, "now considered offline")
+        };
     };
 
     /* Iterate on local tuples */
@@ -140,7 +142,7 @@ def TamTam(typetag := TupleSpace){
 
     /* Attempt to process pending take() call */
     def tupleArrived(tup){
-        log("New tuple arrived: " + tup);
+        log("New tuple arrived: " + tup.fields);
 
         observers.each: {|x|
             def [pattern, callback] := x;
@@ -161,8 +163,11 @@ def TamTam(typetag := TupleSpace){
         def advertise(owner, tup){
             /* Peer is back online, send my whole database */
             if: isOnline(owner).not
-            then: {other<-advertiseAll(self, @(localDb.toArray))@OneWay};
-            
+            then: {
+                log(owner, "is back online");
+                owner<-advertiseAll(self, @(localDb.toArray))@OneWay
+            };
+
             online.put(owner, true);
             if: accept(tup)
             then: {
@@ -192,6 +197,7 @@ def TamTam(typetag := TupleSpace){
 
         /* Another space notify that it has deleted one of his tuples */
         def removeCopy(owner, tup){
+            log("Remove shared tuple", tup.fields);
             if: accept(tup)
             then: {
                 def db := ambientDb.get(owner);
@@ -202,21 +208,22 @@ def TamTam(typetag := TupleSpace){
 
         /* Another space wants to remove a tuple owned by me */
         def remove(tup){
-            log("RemoteIF: remove", tup);
-            log("LocalDb:", localDb);
+            log("Give local tuple", tup);
             removeLocal(tup);
         };
 
         /* Go online ! */
         export: self as: typetag;
         whenever: typetag discovered: {|other|
+            log("Discovered", other);
+
             /* Save ref to other peer for later use */
             peers.add(other);
             online.put(other, true);
             when: other disconnected: {online.put(other, false)};
             when: other reconnected: {
                 online.put(other, true);
-                other<-advertiseAll(self, @(localDb.toArray))@OneWay;
+                //other<-advertiseAll(self, @(localDb.toArray))@OneWay;
             };
             other<-advertiseAll(self, @(localDb.toArray))@OneWay;
         };
@@ -242,7 +249,6 @@ def TamTam(typetag := TupleSpace){
             from: peer
             becomes: {|removed|
                 removed.ifTrue: {
-                    log("Removed", tup, "from", peer);
                     contSuccess(tup);
                 } ifFalse: {
                     log("Removal failed");
@@ -296,10 +302,10 @@ def TamTam(typetag := TupleSpace){
         };
 
         def observeAll: aTuple do: closure {
-            observe: aTuple do: closure;
             getAll(aTuple).each: {|tup|
                 closure(tup);
             };
+            observe: aTuple do: closure;
         };
 
         /* Set the accepting rule for incoming ambient tuples */

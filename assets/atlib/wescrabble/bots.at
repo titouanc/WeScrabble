@@ -1,29 +1,8 @@
-def makeBot(name){
-    actor: {|name|
+def makeBot(name, teamIdx := 0){
+    actor: {|name, teamIdx|
         import /.wescrabble.wescrabble;
-        def log := Logger(name);
-
-        def s := makeWeScrabble(object: {
-            def getMyName(){name};
-            def setAppTitle(@_){};
-            def setTeam(i){log("Joined team", i)};
-            def showMessage := log;
-            def showMyLetters(l){log("I have the letters:" + l.toString())};
-            def setBackend(_){
-                _.addObserver(object:{
-                    def update(){
-                        def table := (0**15).map: {|row|
-                            (0**15).map: {|col|
-                                _.getLetterAt(row, col);
-                            };
-                        };
-                        def repr := (table.map: {|r| r.join(" ")}).join("\n");
-                        system.println();
-                    };
-                });
-            };
-            def setPlayerRack(p, r){log(p, "has rack", r)};
-        });
+        import /.wescrabble.cli;
+        makeWeScrabble(makeConsoleUI(name, teamIdx));
     };
 };
 

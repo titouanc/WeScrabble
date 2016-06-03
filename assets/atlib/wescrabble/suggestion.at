@@ -117,7 +117,11 @@ def Suggestion := isolate: {
             then: {res := res + [w];}
         };
         res;
-    }
+    };
+
+    def toArray(){
+        [name, word, i, j, horizontal];
+    };
 };
 
 self;

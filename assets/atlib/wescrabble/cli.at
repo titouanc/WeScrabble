@@ -1,49 +1,30 @@
-network.online;
+def makeConsoleUI(name, teamIdx := 0){
+    isolate: {
+        import ~.utils;
 
-def player(name, words := []){
-    actor: {
-        def cli := object: {
-            def localIf;
+        def log := Logger(name);
 
-            def getMyName(){name;};
-            def showMessage(title){
-                system.println("=== Set message: " + title + " ===");
-            };
-            def setAppTitle(title){
-                system.println("### Set title: " + title + " ###");
-            };
-            def update(){
-                def letter;
-                (0**15).each: {|row|
-                    (0**15).each: {|col|
-                        letter := localIf.getLetterAt(row, col);
-                        system.print(" " + letter);
+        def getMyName(){name};
+        def getMyTeam(){teamIdx};
+        def setAppTitle(@_){};
+        def setTeam(i){log("Joined team", i)};
+        def showMessage := log;
+        def showMyLetters(l){log("I have the letters:" + l.toString())};
+        def setBackend(_){
+            _.addObserver(object:{
+                def update(){
+                    def table := (0**15).map: {|row|
+                        (0**15).map: {|col|
+                            _.getLetterAt(row, col);
+                        };
                     };
-                    system.println("");
+                    def repr := (table.map: {|r| r.join(" ")}).join("\n");
+                    system.println();
                 };
-            };
-            def setBackend(backend){
-                localIf := backend;
-                localIf.addObserver(self);
-                update();
-            };
-            def setTeam(t){
-                showMessage("Joined team " + t);
-                words.each: {|w|
-                    localIf.addWord(@w)
-                }
-            };
+            });
         };
-
-        ~.wescrabble.makeWeScrabble(cli);
+        def setPlayerRack(p, r){log(p, "has rack", r)};
     };
 };
 
-player("Bot", [
-    ["loop", 3, 3, true],
-    ["door", 2, 5, false]
-]);
-
-player("Clara", [
-    ["libido", 3, 3, false]
-]);
+self;

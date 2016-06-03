@@ -8,17 +8,6 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="be.ititou.wescrabble.Login" >
 
-    <Button
-        android:id="@+id/confirmHorizontalButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="80dp"
-        android:background="@android:drawable/btn_default"
-        android:onClick="goToGame"
-        android:text="Join game" />
-
     <TextView
         android:id="@+id/textView2"
         android:layout_width="wrap_content"
@@ -55,5 +44,28 @@
 
         <requestFocus />
     </EditText>
+
+    <Button
+        android:id="@+id/RedTeam"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/myNameInput"
+        android:layout_marginTop="81dp"
+        android:background="@android:drawable/btn_default"
+        android:onClick="goToRedGame"
+        android:text="Red Team"
+        android:textColor="@android:color/holo_red_light" />
+
+    <Button
+        android:id="@+id/BlueTeam"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_alignTop="@+id/RedTeam"
+        android:background="@android:drawable/btn_default"
+        android:onClick="goToBlueGame"
+        android:text="Blue Team"
+        android:textColor="@android:color/holo_blue_dark" />
 
 </RelativeLayout>

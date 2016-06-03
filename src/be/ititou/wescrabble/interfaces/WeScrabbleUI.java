@@ -17,6 +17,8 @@ public interface WeScrabbleUI {
 	 */
 	public String getMyName();
 	
+	int getMyTeam();
+	
 	/**
 	 * Set the informative message content
 	 * @param message The message content

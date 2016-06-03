@@ -1,5 +1,6 @@
 package be.ititou.wescrabble;
 
+import be.ititou.wescrabble.interfaces.WeScrabbleUI;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -42,14 +43,25 @@ public class Login extends Activity {
 		return super.onOptionsItemSelected(item);
 	}
 	
-	public void goToGame(View sender){
+	public void goToGame(Intent intent){
 		EditText text = (EditText) findViewById(R.id.myNameInput);
 		myName = text.getText().toString();
 		savePreferences();
 		
-		Intent intent = new Intent(this, WeScrabble.class);
 		intent.putExtra("myName", myName);
 		startActivity(intent);
+	}
+	
+	public void goToRedGame(View sender){
+		Intent intent = new Intent(this, WeScrabble.class);
+		intent.putExtra("myTeam", WeScrabbleUI.TeamA);
+		goToGame(intent);
+	}
+	
+	public void goToBlueGame(View sender){
+		Intent intent = new Intent(this, WeScrabble.class);
+		intent.putExtra("myTeam", WeScrabbleUI.TeamB);
+		goToGame(intent);
 	}
 	
 	private void loadSavedPreferences(){
