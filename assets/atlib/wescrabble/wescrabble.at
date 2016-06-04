@@ -61,10 +61,10 @@ def makeWeScrabble(UI){
             Ts.put(tuple: [Letter, myTeam, l]);
         };
 
-        /* Observe joins */
+        /* A teammate joins */
         Ts.observe: (tuple: [Player, myTeam, var: `name]) do: {|tup|
             def name := tup[3];
-            if: {name != myName}
+            if: name != myName
             then: {
                 UI.showMessage(tup[3] + " joins your team !");
             };
@@ -78,6 +78,7 @@ def makeWeScrabble(UI){
             res;
         };
 
+        /* A teammate took a letter */
         Ts.observeAll: (tuple: [Letter, myTeam, var: `player, var: ` l]) do: {|tup|
             def player := tup[3];
             if: player != myName
@@ -86,6 +87,7 @@ def makeWeScrabble(UI){
             }
         };
 
+        /* Someone add a word */
         Ts.observeAll: (tuple: [Word, var: `_, var: `sugg]) do: {|tup|
             def sugg := Suggestion.new(@(tup[3]));
             sugg.applyOn(table);
@@ -188,6 +190,10 @@ def makeWeScrabble(UI){
 
             def getMyLetters(){
                 mySelf.letters.toList();
+            };
+
+            def swapLetter(myLetter, player, hisLetter){
+                UI.showMessage("Exchange " + myLetter + " with " + hisLetter + " from " + player);
             };
             
             UI.setBackend(self);

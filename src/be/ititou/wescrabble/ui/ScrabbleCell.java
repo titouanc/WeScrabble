@@ -1,13 +1,11 @@
 package be.ititou.wescrabble.ui;
 
-import be.ititou.wescrabble.interfaces.ATWeScrabble;
 import be.ititou.wescrabble.R;
 import be.ititou.wescrabble.WeScrabble;
 import android.app.Dialog;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Message;
 import android.view.Gravity;

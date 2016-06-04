@@ -1,6 +1,5 @@
 package be.ititou.wescrabble.interfaces;
 
-import java.util.List;
 
 public interface ATWeScrabble {
 	/**
@@ -10,10 +9,10 @@ public interface ATWeScrabble {
 	 * @return A 1-length string
 	 */
 	public String getLetterAt(int row, int column);
-	
-	public List<String> getMyLetters();
-	
+		
 	public Boolean addWord(String word, int row, int column, Boolean horizontally);
 	
 	public void addObserver(TableObserver observer);
+
+	public void swapLetter(String myLetter, String player, String hisLetter);
 }

@@ -1,15 +1,18 @@
 package be.ititou.wescrabble;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import be.ititou.wescrabble.interfaces.ATWeScrabble;
 import be.ititou.wescrabble.interfaces.WeScrabbleUI;
+import be.ititou.wescrabble.ui.SwapLetterDialog;
 import edu.vub.at.IAT;
 import edu.vub.at.android.util.IATAndroid;
 import edu.vub.at.objects.natives.NATText;
 import android.app.Activity;
+import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -38,7 +41,8 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 	private IAT iat;
 	private ATWeScrabble aws;
 	private GridView table;
-	private Map<String, String> racks = new HashMap<String, String>();
+	private List<String> myLetters = new ArrayList<String>();
+	private Map<String, List<String>> racks = new HashMap<String, List<String>>();
 	private LooperThread lt;
 	
 	public static class Suggestion {
@@ -117,9 +121,6 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 	@Override
 	protected void onStop(){
 		super.onStop();
-//		if (iatRunner != null){
-//			iatRunner.cancel(true);
-//		}
 		if (iat != null){
 			iat.evalAndPrint("system.exit()");
 		}
@@ -147,11 +148,11 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 		TextView text = (TextView) findViewById(R.id.teamLabel);
 		switch (myTeam){
 			case WeScrabbleUI.TeamA:
-				text.setText("Team A");
+				text.setText("Red Team");
 				text.setTextColor(Color.RED);
 				break;
 			case WeScrabbleUI.TeamB:
-				text.setText("Team B");
+				text.setText("Blue Team");
 				text.setTextColor(Color.BLUE);
 				break;
 		}
@@ -176,14 +177,17 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
     	synchronized (racks){
     		menu.clear();
 	        menu.add("My team racks...");
+	        final WeScrabble ctx = this;
 	        
 	        for (final String player : racks.keySet()){
-	        	String letters = racks.get(player);
+	        	final List<String> hisLetters = racks.get(player);
+	        	String letters = join(", ", hisLetters);
 	        	MenuItem item = menu.add(player + ": " + letters);
 	        	item.setOnMenuItemClickListener(new OnMenuItemClickListener(){
 					@Override
 					public boolean onMenuItemClick(MenuItem item) {
-						showMessage("Selected " + player);
+						final Dialog dialog = new SwapLetterDialog(ctx, myLetters, player, hisLetters); 
+					    dialog.show();
 						return true;
 					}
 	        	});
@@ -255,23 +259,25 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 			}
 		});
 	}
-	
-	private static String joinLetters(List<NATText> letters){
-		String text = "";
-		int i = 0;
-		for (NATText nat : letters){
-			if (i > 0){
-				text += ", ";
-			}
-			text += nat.toString().replaceAll("\"", "").toUpperCase();
-			i++;
+
+	@Override
+	public void setPlayerRack(String playerName, List<NATText> letters) {
+		synchronized (racks) {
+			racks.put(playerName, convertATTexts(letters));
 		}
-		return text;
+	}
+
+	@Override
+	public void removePlayerRack(String playerName) {
+		synchronized (racks){
+			racks.remove(playerName);
+		}
 	}
 
 	@Override
 	public void showMyLetters(final List<NATText> letters) {
-		final String finalText = joinLetters(letters);
+		myLetters = convertATTexts(letters);
+		final String finalText = join(", ", myLetters);
 		final TextView myLetters = (TextView) findViewById(R.id.myLetters);
 		if (myLetters != null){
 			runOnUiThread(new Runnable(){
@@ -283,18 +289,26 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 			});
 		}
 	}
-
-	@Override
-	public void setPlayerRack(String playerName, List<NATText> letters) {
-		synchronized (racks) {
-			racks.put(playerName, joinLetters(letters));
+	
+	private String join(String inBetween, Iterable<String> iter){
+		int i = 0;
+		String res = "";
+		for (String s : iter){
+			if (i > 0){
+				res += inBetween;
+			}
+			res += s;
+			i++;
 		}
+		return res;
 	}
-
-	@Override
-	public void removePlayerRack(String playerName) {
-		synchronized (racks){
-			racks.remove(playerName);
+	
+	private List<String> convertATTexts(List<NATText> texts){
+		List<String> res = new ArrayList<String>();
+		for (NATText nat : texts){
+			String s = nat.toString().replaceAll("\"", "").toUpperCase();
+			res.add(s);
 		}
+		return res;
 	}
 }
