@@ -1,6 +1,7 @@
 network.online;
 
 actor: {
+    deftype Player;
     deftype Letter;
     deftype Word;
     deftype AnAwesomeWeScrabble;
@@ -8,21 +9,16 @@ actor: {
     import ~.tuple;
     import ~.suggestion;
 
+    def Date := jlobby.java.util.Date;
+    def show(tup){system.println(Date.new.toLocaleString + " " + tup.fields)};
+
     def Ts := ~.tamtam.TamTam(AnAwesomeWeScrabble);
 
-    Ts.observeAll: (tuple: [Letter, var: `x, var: `y]) do: {|tup|
-        def [_, team, letter] := tup.fields;
-        system.println("" + team + " has letter " + letter);
-    };
+    Ts.observe: (tuple: [Player, var: `team, var: `name]) do: &show;
+    Ts.observe: (tuple: [Letter, var: `team, var: `l]) do: &show;
+    Ts.observe: (tuple: [Letter, var: `team, var: `player, var: `l]) do: &show;
+    Ts.observe: (tuple: [Word, var: `team, var: `sugg]) do: &show;
 
-    Ts.observeAll: (tuple: [Letter, var: `x, var: `y, var: `z]) do: {|tup|
-        def [_, team, player, letter] := tup.fields;
-        system.println("" + player + " in team " + team + " has letter " + letter);
-    };
-
-    Ts.observeAll: (tuple: [Word, var: `y, var: `z]) do: {|tup|
-        def [_, team, s] := tup.fields;
-        def sugg := Suggestion.new(@s);
-        system.println(sugg.repr);
-    };
+    Ts.getAll.map: &show;
+    system.println("---------------------");
 };

@@ -10,9 +10,20 @@ def Placeholder := isolate: {
 
 def Tuple := isolate: {
     def fields;
+    def seq;
 
     def init(contents){
         fields := contents;
+        seq := -1;
+    };
+
+    def mark(seqNo){
+        seq := seqNo;
+        seq+1;
+    };
+
+    def sent(){
+        seq >= 0;
     };
 
     def at(i){

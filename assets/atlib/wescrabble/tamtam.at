@@ -78,13 +78,14 @@ def TamTam(typetag := TupleSpace){
         };
     };
 
+
     /* Background networking process */
     def runner := actor: {|localIf, typetag|
         /* Timeout for remote calls.
          * A peer is considered offline if it overrun this timeout.
          * Might be enhanced with dynamic latency monitoring?
          */
-        def DISCONNECT_TIMEOUT := 10.seconds;
+        def DISCONNECT_TIMEOUT := 20.seconds;
 
         def List := jlobby.java.util.LinkedList;
         def Dict := jlobby.java.util.HashMap;
@@ -99,7 +100,6 @@ def TamTam(typetag := TupleSpace){
         def online := Dict.new;    // {remoteRef: true/false}: is the player online
         def localDb := List.new;   // [tuple]: Local tuples
         def takeWait := [];        // waiting take() call
-
 
         def tupleAcceptor := object: {def accept(@_){true}};
         def setTupleAcceptor(x){
@@ -210,11 +210,17 @@ def TamTam(typetag := TupleSpace){
 
         def remoteIf := object: {
             def log := Logger("TamTam Remote", false);
+            def seqs := Dict.new;
+
+            def isNew(owner, tup){
+                def s := seqs.get(owner);
+                (s == nil).or: {tup.seq > s};
+            };
 
             /* Another space advertises one of his tuples */
             def advertise(owner, tup){
                 /* Peer is back online, send my whole database */
-                if: isOnline(owner).not
+                if: online.get(owner) == false
                 then: {
                     log(owner, "is back online");
                     owner<-advertiseAll(self, @(localDb.toArray))@OneWay
@@ -222,8 +228,10 @@ def TamTam(typetag := TupleSpace){
 
                 online.put(owner, true);
                 localIf<-setOnline(online);
-                if: tupleAcceptor.accept(tup)
+
+                if: (isNew(owner, tup).and: {tupleAcceptor.accept(tup)})
                 then: {
+                    seqs.put(owner, tup.seq);
                     log("Accept external tuple " + tup.fields);
                     def known := ambientDb.get(owner);
                     if: known == nil then: {
@@ -242,8 +250,9 @@ def TamTam(typetag := TupleSpace){
                 localIf<-setOnline(online);
                 def res := List.new;
                 tups.each: {|t|
-                    if: tupleAcceptor.accept(t)
+                    if: (isNew(owner, t).and: {tupleAcceptor.accept(t)})
                     then: {
+                        seqs.put(owner, t.seq);
                         res.add(t);
                         tupleArrived(t);
                     };
@@ -289,7 +298,7 @@ def TamTam(typetag := TupleSpace){
                 when: other reconnected: {
                     online.put(other, true);
                     localIf<-setOnline(online);
-                    //other<-advertiseAll(self, @(localDb.toArray))@OneWay;
+                    other<-advertiseAll(self, @(localDb.toArray))@OneWay;
                 };
                 other<-advertiseAll(self, @(localDb.toArray))@OneWay;
             };
@@ -305,7 +314,9 @@ def TamTam(typetag := TupleSpace){
             };
         };
 
+        def sent := 0;
         def put(tup){
+            sent := tup.mark(sent);
             localDb.add(tup);
             localIf<-setLocalDb(localDb);
             share(tup);
@@ -339,6 +350,7 @@ def TamTam(typetag := TupleSpace){
             }
         };
     };
+
 
     /* Public interface */
     object: {

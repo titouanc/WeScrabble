@@ -118,11 +118,12 @@ def pickLetter(p){
 
 def randomLetters(n := 1){
     def R := jlobby.java.util.Random.new();
-    def res := jlobby.java.util.ArrayList.new();
-    0.to: n do: {|_|
-        res.add(pickLetter(R.nextFloat.doubleValue));
+    def i := 0;
+    def res[n]{
+        i := i + R.nextFloat.doubleValue;
+        if: i > 1 then: {i := i-1};
+        pickLetter(i);
     };
-    res.toArray();
 };
 
 self;

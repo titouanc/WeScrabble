@@ -1,6 +1,7 @@
 package be.ititou.wescrabble;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -94,6 +95,7 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 	
 	class LooperThread extends Thread {
 		public Handler mHandler = new Handler() {
+			@Override
 			public void handleMessage(Message msg) {
 				if (aws == null)
 					return;
@@ -109,6 +111,7 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 			}
 		};
 
+		@Override
 		public void run() {
 			Looper.prepare();
 			Looper.loop();
@@ -309,6 +312,7 @@ public class WeScrabble extends Activity implements WeScrabbleUI {
 			String s = nat.toString().replaceAll("\"", "").toUpperCase();
 			res.add(s);
 		}
+		Collections.sort(res);
 		return res;
 	}
 }

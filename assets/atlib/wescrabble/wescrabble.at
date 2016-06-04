@@ -2,17 +2,16 @@ import ~.suggestion;
 import ~.letterset;
 import ~.tamtam;
 
+/*
+ * TODO:
+ *  - End of game
+ */
+
 /* Direct P2P communication type */
 deftype AnAwesomeWeScrabble;
 
 /* The whole alphabet */
 def alphabet := "abcdefghijklmnopqrstubwxyz".explode();
-
-/*
- * STILL TODO:
- *  - Players of the same team can see and exchange letters from each other
- *  - 
- */
 
 def makeWeScrabble(UI){
     def log := Logger("WeScrabble");
@@ -23,7 +22,6 @@ def makeWeScrabble(UI){
         def mySelf := self;
         def table := (1***15).map: {|_| (1***15).map: {|__| Suggestion.EMPTY}};
         def observers := jlobby.java.util.LinkedList.new();
-        def letters := LetterSet.new([]);
 
         deftype TeamA;
         deftype TeamB;
@@ -31,9 +29,10 @@ def makeWeScrabble(UI){
         def indexOfTeam: team {if: team == TeamA then: {0} else: {1}};
         def teamOfIndex: idx {if: idx == 0 then: {TeamA} else: {TeamB}};
 
-        deftype Player;
-        deftype Letter;
-        deftype Word;
+        /* Tuplespace tags (first fiels of all tuples) */
+        deftype Player; // A player identifies itself
+        deftype Letter; // A letter in a player rack or to be taken
+        deftype Word;   // A formed word
 
         def myTeam := teamOfIndex: UI.getMyTeam();
         def myName := UI.getMyName();
@@ -81,10 +80,11 @@ def makeWeScrabble(UI){
         /* A teammate took a letter */
         Ts.observeAll: (tuple: [Letter, myTeam, var: `player, var: ` l]) do: {|tup|
             def player := tup[3];
-            if: player != myName
-            then: {
-                UI.setPlayerRack(player, rackOf(player));
-            }
+            def rack := rackOf(player);
+
+            if: player == myName
+            then: {UI.showMyLetters(rack)}
+            else: {UI.setPlayerRack(player, rack)};
         };
 
         /* Someone add a word */
@@ -102,27 +102,28 @@ def makeWeScrabble(UI){
         /**/
 
         /* Pick letters from the bag */
-        def pickLetters(){
-            if: letters.size() < 7
+        def pickLetters(n := 7){
+            if: n > 0
             then: {
                 /* Pick a letter, then pick n-1 letters */
                 Ts.take: (tuple: [Letter, myTeam, var: `l]) do: {|tup|
                     Ts.put(tuple: [Letter, myTeam, myName, tup[3]]);
-                    letters.add(tup[3]);
-                    UI.showMyLetters(letters.toList());
-                    pickLetters();
+                    pickLetters(n - 1);
                 };
             };
         };
 
+        pickLetters();
+
+        /* Apply bonuses (letters on special cells) for a word suggestion */
         def applyBonuses(sugg){
             def bonus := 0;
             /* Special cells */
             sugg.each: {|let, row, col|
-                // Red cell: Add 5 random letters to the opponent
+                // Red cell: Add letters from this word to the opponent team
                 if: ((row == 8).and: {col == 8})
                 then: {
-                    randomLetters(5).each: {|l|
+                    sugg.each: {|l, _, __|
                         Ts.put(tuple: [Letter, (opponnentOf: myTeam), l]);
                         bonus := bonus + 1;
                     };
@@ -145,8 +146,11 @@ def makeWeScrabble(UI){
 
         /* The local user plays a suggestion */
         def play(sugg){
+            def letters := LetterSet.new(rackOf(myName).toArray);
+            def required := LetterSet.new(sugg.requiredLetters(table));
+            def newLetters := letters - required;
+
             {|return|
-                def newLetters := letters - LetterSet.new(sugg.requiredLetters(table));
                 if: newLetters.positive.not
                 then: {
                     UI.showMessage("You don't have all required letters");
@@ -162,15 +166,35 @@ def makeWeScrabble(UI){
 
                     /* And add suggestion */
                     Ts.put(tuple: [Word, myTeam, sugg.toArray]);
-                    letters := newLetters;
                     UI.showMyLetters(letters.toList());
-                    pickLetters();
+                    pickLetters(required.size());
                     applyBonuses(sugg);
                     return(true);
                 };
                 
                 false;
             }.escape()
+        };
+
+        def swapLetter(myLetter, player, hisLetter){
+            /* Take my letter, so that it cannot be played */
+            Ts.take: (tuple: [Letter, myTeam, myName, myLetter]) do: {|myTup|
+                /* Take letter from other player in max 10s */
+                when: due(10.seconds, Ts.take(tuple: [Letter, myTeam, player, hisLetter]))
+                becomes: {|hisTup|
+                    /* Give my letter to the other player */
+                    Ts.put(tuple: [Letter, myTeam, player, myLetter]);
+
+                    /* Put his letter in my rack */
+                    Ts.put(tuple: [Letter, myTeam, myName, hisLetter]);
+                    UI.showMessage("Swapped letter with " + player);
+                }
+                catch: DueTimeout using: {|@_|
+                    /* If removal failed, insert my letter back */
+                    Ts.put(myTup);
+                    UI.showMessage("Cannot swap letter with " + player);
+                };
+            };
         };
 
         def localInterface := object: {
@@ -188,19 +212,16 @@ def makeWeScrabble(UI){
 
             def addObserver := mySelf.observers.&add;
 
-            def getMyLetters(){
-                mySelf.letters.toList();
-            };
-
             def swapLetter(myLetter, player, hisLetter){
-                UI.showMessage("Exchange " + myLetter + " with " + hisLetter + " from " + player);
+                mySelf.swapLetter(myLetter.toLowerCase(), player, hisLetter.toLowerCase());
+                UI.showMessage(
+                    "Take " + hisLetter.toUpperCase() + " from " + player +
+                    " and give " + myLetter.toUpperCase() + "..."
+                );
             };
             
             UI.setBackend(self);
         };
-
-        /* Finally start everything */
-        pickLetters();
     };
 
     TheAwesomeWeScrabble.localInterface;
