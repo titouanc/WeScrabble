@@ -7,8 +7,8 @@
 def List := jlobby.java.util.LinkedList;
 def Dict := jlobby.java.util.HashMap;
 
-import ~.utils;
-import ~.tuple;
+import /.wescrabble.utils;
+import /.wescrabble.tuple;
 
 deftype TupleSpace;
 
@@ -16,7 +16,7 @@ deftype TupleSpace;
  * @param typetag: The typetag exported by the ambient tuplespace
  *                 (no collisions for tests)
  */
-def TamTam(typetag := TupleSpace, accept := nil){
+def TamTam(typetag := TupleSpace){
     /* 
      * Local cache of the tuple space for synchronous access
      * TODO: create metaclass to update the localIf when one of the actor
@@ -89,8 +89,8 @@ def TamTam(typetag := TupleSpace, accept := nil){
         def List := jlobby.java.util.LinkedList;
         def Dict := jlobby.java.util.HashMap;
 
-        import ~.utils;
-        import ~.tuple;
+        import /.wescrabble.utils;
+        import /.wescrabble.tuple;
 
         def log := Logger("TamTam Runner", false);
         

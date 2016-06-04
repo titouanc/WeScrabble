@@ -6,18 +6,23 @@ actor: {
     deftype AnAwesomeWeScrabble;
 
     import ~.tuple;
+    import ~.suggestion;
 
     def Ts := ~.tamtam.TamTam(AnAwesomeWeScrabble);
 
-    //Ts.observeAll: (tuple: [Letter, var: `x, var: `y]) do: {|tup|
-    //    system.println(tup.fields);
-    //};
+    Ts.observeAll: (tuple: [Letter, var: `x, var: `y]) do: {|tup|
+        def [_, team, letter] := tup.fields;
+        system.println("" + team + " has letter " + letter);
+    };
 
-    //Ts.observeAll: (tuple: [Letter, var: `x, var: `y, var: `z]) do: {|tup|
-    //    system.println(tup.fields);
-    //};
+    Ts.observeAll: (tuple: [Letter, var: `x, var: `y, var: `z]) do: {|tup|
+        def [_, team, player, letter] := tup.fields;
+        system.println("" + player + " in team " + team + " has letter " + letter);
+    };
 
-    //Ts.observeAll: (tuple: [Word, var: `y, var: `z]) do: {|tup|
-    //    system.println(tup.fields);
-    //};
+    Ts.observeAll: (tuple: [Word, var: `y, var: `z]) do: {|tup|
+        def [_, team, s] := tup.fields;
+        def sugg := Suggestion.new(@s);
+        system.println(sugg.repr);
+    };
 };

@@ -47,9 +47,12 @@ def makeWeScrabble(UI){
         };
 
         /* Initialize tuplespace */
-        def Ts := TamTam(AnAwesomeWeScrabble, {|tup|
-            (tup[1] == Word).or: {tup[2] == myTeam}
-        });
+        def Ts := TamTam(AnAwesomeWeScrabble);
+        Ts.accepts: isolate: {
+            def accept(tup){
+                (tup[1] == Word).or: {tup[2] == myTeam}
+            }
+        };
 
         Ts.put(tuple: [Player, myTeam, myName]);
 
@@ -60,18 +63,26 @@ def makeWeScrabble(UI){
 
         /* Observe joins */
         Ts.observe: (tuple: [Player, myTeam, var: `name]) do: {|tup|
-            UI.showMessage(tup[3] + " joins your team !");
+            def name := tup[3];
+            if: {name != myName}
+            then: {
+                UI.showMessage(tup[3] + " joins your team !");
+            };
+        };
+
+        def rackOf(playerName){
+            def res := List.new;
+            Ts.getAll(tuple: [Letter, myTeam, playerName, var: `l]).each: {|tup|
+                res.add(tup[4]);
+            };
+            res;
         };
 
         Ts.observeAll: (tuple: [Letter, myTeam, var: `player, var: ` l]) do: {|tup|
             def player := tup[3];
             if: player != myName
             then: {
-                def res := List.new;
-                Ts.getAll(tuple: [Letter, myTeam, player, var: `l]).each: {|tup|
-                    res.add(tup[4]);
-                };
-                UI.setPlayerRack(player, res);
+                UI.setPlayerRack(player, rackOf(player));
             }
         };
 
@@ -79,6 +90,12 @@ def makeWeScrabble(UI){
             def sugg := Suggestion.new(@(tup[3]));
             sugg.applyOn(table);
             notifyObservers();
+
+            if: sugg.name != myName
+            then: {
+                /* player has put letters, update his rack */
+                UI.setPlayerRack(sugg.name, rackOf(sugg.name));
+            };
         };
         /**/
 
@@ -146,7 +163,7 @@ def makeWeScrabble(UI){
                     letters := newLetters;
                     UI.showMyLetters(letters.toList());
                     pickLetters();
-                    spawn: {applyBonuses(sugg)};
+                    applyBonuses(sugg);
                     return(true);
                 };
                 
