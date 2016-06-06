@@ -48,7 +48,7 @@ The assignment did not state how many teams should be supported. I choosed to on
 \subsection{Foreword}
 The very fiust implementation of the game has been realized using ambient references. However, the resulting code was getting more and more complex with the increasing number of features. Th main problem was that time decoupling had to be handled in the application code.
 
-In order to get time decoupling, I then switched to a tuplespace based implementation. All the code had been refactored to use the totam library. However the first tests showed that totam could be very slow, especially on Android. After some frustrating debug time, I decided to implement my own tuplespace system: TamTam.
+In order to get time decoupling, I then switched to a tuplespace based implementation. All the code had been refactored to use the totam library. However the first tests showed that totam could be very slow, especially on Android where it also took phones very hot. After some frustrating debug time, I decided to implement my own tuplespace system: TamTam.
 
 \subsection{TamTam}
 TamTam is a shared tuplespace system, with a single hop replication. Incoming tuples from other tuplespace may be filtered with a user provided function, in order to ignore uninteresting tuples and reduce cache size.
@@ -85,11 +85,27 @@ All tuples exchanged in WeScrabble always have the format $\tau(<Type>, <Team>, 
   \item $\tau(Letter, Team, letter:string)$ A letter belonging to a team
   \item $\tau(Letter, Team, player:string, letter:string)$ A player takes a letter in its rack.
   \item $\tau(Word, Team, Suggestion)$ A word is added on the grid. The Suggestion is an isolate that contains all the necessary fields to place the word on the grid.
+  \item $\tau(Win, Team)$ A player try to pick letters, but there are no more, so it announce the victory of its team.
 \end{itemize}
 
 \subsection{Random letters}
 When a player joins a team and contribute letters to the team letter set, it pick random letters. In order to obtain fairly fair racks of letters, I computed the relative frequency of each letter in the provided dictionary. To pick a random letter, we choose an uniformely distributed real number $q$ between 0 and 1, and return the first $i^{th}$ letter so that $\sum_{k=0}^{i} Freq(i) \geq q$. Therefore, the distribution of letters in the rack should be roughly the same as the distribution of letters in the dictionary.
 
+
+\section{Testing}
+The AmbientTalk source directory (\texttt{assets/atlib/wescrabble}) contains all files needed to run the application on a phone, but also various utility scripts and tests.
+
+\paragraph{bots.at} This scripts starts a few actors, all in the same team. It has been useful to tests various features such as rack sharing or letter swap.
+
+\paragraph{bots2.at} This script start a single actor which tries to naively add words on the grid anytime it can
+
+\paragraph{TamTamObserver.at} This script observe a few interesting tuples on a TamTam shared space (but does not identify itself as a WeScrabble).
+
+\subsection{Unit tests}
+Unit tests are provided for a few components (application logic and TamTam). As a side note, TamTam was written using a test driven development methodology. You can run the tests using the \texttt{runtests.sh} script.
+
+\subsection{Testing for network failures}
+Network failures have been tested by pausing the utilities scripts processes (\texttt{CTRL+Z} on linux) and then resuming it (\texttt{fg} on linux). Tuples continue to flow. Tests on Android have been much less convincing: while WeScrabble was running the WiFi is disabled then enabled again. However it seems that the AmbientTalk \texttt{when: ... reconnected \{...\}} callback is never called, and it does not discover peers again. As the tuplespace is fully decoupled in time and space, players can join and leave at any time.
 
 \section{Improvements}
 I really enjoyed working on this project, however due to limited time, I have not implemented all the features I wanted to. In this section I will present a few ones, with a description of how it could be implemented
@@ -102,5 +118,8 @@ The actual implementation expects the player names to be different, but does not
 
 \subsection{Fair racks}
 For now the program does not fully ensure that the picked up letters are fair. For instance if a player only receives consonants, he will be disadvantaged as it will be more difficult for him to form words. The program could check whether a rack is fair and if not throw away the whole rack to the team pool and pick new letters.
+
+\subsection{Scores}
+Given distribution of letters, each one gets assigned a value, which is $log(\frac{1}{freq})$, and scores for words and teams would be the sum of these individual scores. The data is already available, but I had no time to implement team scores, that would be displayed in real time.
 
 \end{document}
