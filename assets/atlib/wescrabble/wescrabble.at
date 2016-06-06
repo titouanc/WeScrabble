@@ -33,6 +33,7 @@ def makeWeScrabble(UI){
         deftype Player; // A player identifies itself
         deftype Letter; // A letter in a player rack or to be taken
         deftype Word;   // A formed word
+        deftype Win;    // A team announce its victory
 
         def myTeam := teamOfIndex: UI.getMyTeam();
         def myName := UI.getMyName();
@@ -69,6 +70,16 @@ def makeWeScrabble(UI){
             };
         };
 
+        Ts.observe: (tuple: [Win, var: `t]) do: {|tup|
+            def winner := tup[2];
+
+            UI.showMessage(
+                if: winner == myTeam
+                then: {"Congrats ! Your team wins !"}
+                then: {"Your team lost the game !"});
+            system.exit();
+        };
+
         def rackOf(playerName){
             def res := List.new;
             Ts.getAll(tuple: [Letter, myTeam, playerName, var: `l]).each: {|tup|
@@ -102,13 +113,21 @@ def makeWeScrabble(UI){
         /**/
 
         /* Pick letters from the bag */
-        def pickLetters(n := 7){
+        def pickLetters(n := 7, checkForEnd := false){
             if: n > 0
             then: {
+                if: checkForEnd
+                then: {
+                    def picakble := Ts.getAll(tuple: [Letter, myTeam, var: `l]);
+                    if: picakble.length == 0
+                    then: {
+                        Ts.put(tuple: [Win, myTeam]);
+                    };
+                };
                 /* Pick a letter, then pick n-1 letters */
                 Ts.take: (tuple: [Letter, myTeam, var: `l]) do: {|tup|
                     Ts.put(tuple: [Letter, myTeam, myName, tup[3]]);
-                    pickLetters(n - 1);
+                    pickLetters(n - 1, checkForEnd);
                 };
             };
         };
@@ -173,7 +192,7 @@ def makeWeScrabble(UI){
                     /* And add suggestion */
                     Ts.put(tuple: [Word, myTeam, sugg.toArray]);
                     UI.showMyLetters(newLetters.toList());
-                    pickLetters(required.size());
+                    pickLetters(required.size(), true);
                     applyBonuses(sugg);
                     return(true);
                 };
