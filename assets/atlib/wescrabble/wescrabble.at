@@ -151,6 +151,12 @@ def makeWeScrabble(UI){
             def newLetters := letters - required;
 
             {|return|
+                if: required.size == 0
+                then: {
+                    UI.showMessage("You must at least place 1 letter");
+                    return(false);
+                };
+
                 if: newLetters.positive.not
                 then: {
                     UI.showMessage("You don't have all required letters");
@@ -166,7 +172,7 @@ def makeWeScrabble(UI){
 
                     /* And add suggestion */
                     Ts.put(tuple: [Word, myTeam, sugg.toArray]);
-                    UI.showMyLetters(letters.toList());
+                    UI.showMyLetters(newLetters.toList());
                     pickLetters(required.size());
                     applyBonuses(sugg);
                     return(true);
