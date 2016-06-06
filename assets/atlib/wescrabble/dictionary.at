@@ -21102,12 +21102,12 @@ def find: word in: table with: smallerOrEqualsCmp {
 
 //public interface
 def DictionaryModule := object: {
-    def randomGen := jlobby.java.util.Random.new();
-
-    def randomWord(){
-        dictionary[1 + randomGen.nextInt(dictionary.length)];
+    def filterWord: closure {
+        {|return|
+            dictionary.each: {|w| if: closure(w) then: {return(w)}};
+        }.escape();
     };
-    
+
     def findWord: word {
         //smaller or equal comparator where elements are text.
         find: word in: dictionary with: { |e1, e2| 
