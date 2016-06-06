@@ -76,7 +76,7 @@ def makeWeScrabble(UI){
             UI.showMessage(
                 if: winner == myTeam
                 then: {"Congrats ! Your team wins !"}
-                then: {"Your team lost the game !"});
+                else: {"Your team lost the game !"});
             system.exit();
         };
 
@@ -118,10 +118,12 @@ def makeWeScrabble(UI){
             then: {
                 if: checkForEnd
                 then: {
-                    def picakble := Ts.getAll(tuple: [Letter, myTeam, var: `l]);
-                    if: picakble.length == 0
-                    then: {
-                        Ts.put(tuple: [Win, myTeam]);
+                    /.at.support.timer.when: 5.seconds elapsed: {
+                        def picakble := Ts.getAll(tuple: [Letter, myTeam, var: `l]);
+                        if: picakble.length == 0
+                        then: {
+                            Ts.put(tuple: [Win, myTeam]);
+                        };
                     };
                 };
                 /* Pick a letter, then pick n-1 letters */
